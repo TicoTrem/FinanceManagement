@@ -61,7 +61,7 @@ func editMonthlyExpense(monthlyExpense db.MonthlyExpense) {
 			monthlyExpense.UpdateExpenseAmount(newAmount)
 			amountChanged := newAmount - oldAmount
 			// updated the estimated spending money
-			db.SetEstimatedSpendingMoney(db.GetEstimatedSpendingMoney() + amountChanged)
+			db.SetEstimatedSpendingMoney(db.GetEstimatedSpendingMoney() - amountChanged)
 		case "3":
 			for {
 				response, exit := utils.GetUserResponse("Was the payment made already this month?\n1) Yes\n2) No")
@@ -180,7 +180,7 @@ func handleAddNewGoal() {
 		break
 	}
 	db.AddGoal(&goal)
-	fmt.Printf("Your goal was successfully created, you will save $%v per month for %v months", goal.AmountPerMonth, goal.MonthsLeft)
+	fmt.Printf("Your goal was successfully created, you will save $%v per month for %v months\n", goal.AmountPerMonth, goal.MonthsLeft)
 
 }
 
@@ -226,7 +226,7 @@ func editGoal(goal db.Goal) {
 	response, exit := utils.GetUserResponse(`Would you like to edit:
 												1) Goal name
 												2) Goal amount
-												3) Goal completion date
+												3) Months to goal completion
 												4) Amount per month towards the goal`)
 	if exit {
 		return
@@ -262,17 +262,18 @@ func editGoal(goal db.Goal) {
 		goal.UpdateGoalAmount(response, changeMonthlyPayments)
 		fmt.Printf("Successfully updated goal.\nMontly payments: $%v\nMonthly payments left: %v", goal.AmountPerMonth, goal.MonthsLeft)
 	case "3":
-		date, exit := getDateFromUser()
+		months, exit := utils.GetUserResponseInt("How many months from now would you like the goal complete instead?")
 		if exit {
 			return
 		}
-		goal.UpdateGoalDate(date)
+		goal.UpdateMonthsLeft(months)
+		fmt.Printf("Your monthly contribution will now be %v to achieve your goal in %v months", goal.AmountPerMonth, goal.MonthsLeft)
 	case "4":
 		response, exit := utils.GetUserResponseFloat("What would you like the new monthly payment to be?")
 		if exit {
 			return
 		}
-		goal.UpdateGoalMonthly(response)
+		goal.UpdateMonthly(response)
 		fmt.Printf("Your goal is now set to be completed in %v months\n", goal.MonthsLeft)
 
 	}

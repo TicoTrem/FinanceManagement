@@ -16,7 +16,7 @@ func HandleEmergencyFund() {
 	emergencyAmount, emergencyMax := db.GetEmergencyData()
 	fmt.Printf("Welcome to to your emergency fund.\nCurrent fund is $%v/$%v\n"+
 		"If your emergency fund is not full, half your new monthly spending money will "+
-		"go towards it until filled.\n", emergencyMax, emergencyAmount)
+		"go towards it until filled.\n", emergencyAmount, emergencyMax)
 
 	response, exit := utils.GetUserResponse(`What would you like to do?
 			1) Spend Emergency Fund`)

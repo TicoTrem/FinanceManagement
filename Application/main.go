@@ -7,7 +7,6 @@ import (
 	"github.com/ticotrem/finance/shared"
 	"github.com/ticotrem/finance/shared/db"
 	"github.com/ticotrem/finance/shared/utils"
-	"math"
 )
 
 // TODO: Make sure we are closing all database connections (defer rows.close())
@@ -21,7 +20,7 @@ func main() {
 	_, emergencyAmount := db.GetEmergencyData()
 
 	for {
-		estimatedMoneyString := getEstimatedSpendingMoneyString()
+
 		// TODO: When you edit or delete a transaction, make it so it updates everything properly
 		response, exit := utils.GetUserResponse(`Welcome to Finance!
 		Spending money is: %v
@@ -35,7 +34,7 @@ func main() {
 				5) Manage your emergency fund
 				6) Manage your savings
 				7) Change expected monthly income
-				8) Pass a month by for testing`, estimatedMoneyString, emergencyAmount, db.GetAmountToSaveThisMonth())
+				8) Pass a month by for testing`, utils.GetMoneyString(db.GetEstimatedSpendingMoney()), emergencyAmount, db.GetAmountToSaveThisMonth())
 
 		if exit {
 			return
@@ -69,18 +68,6 @@ func main() {
 		}
 	}
 
-}
-
-func getEstimatedSpendingMoneyString() string {
-	var estimatedMoneyString string
-	estimatedSpendingMoney := db.GetEstimatedSpendingMoney()
-	if estimatedSpendingMoney < 0 {
-		absEstimatedSpendingMoney := math.Abs(float64(estimatedSpendingMoney))
-		estimatedMoneyString = fmt.Sprintf("-$%.2f", absEstimatedSpendingMoney)
-	} else {
-		estimatedMoneyString = fmt.Sprintf("$%.2f", estimatedSpendingMoney)
-	}
-	return estimatedMoneyString
 }
 
 // When the program first comes online, calculate the spending money based on the transactions

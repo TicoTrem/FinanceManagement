@@ -115,9 +115,16 @@ func MonthlyTask() {
 
 	netTransactionChange := calculateNetTransactionChange()
 
+	// contribute to emergency fund
 	if emergencyAmount < emergencyMax && netTransactionChange > 0 {
-		// creates a transaction, lowering the spending money
-		db.IncreaseEmergencyFund(netTransactionChange / 2)
+		// creates a transaction, lowering the estimated spending money by adding a transaction
+		amountToIncrease := netTransactionChange / 2
+		difference := emergencyMax - emergencyAmount
+		if amountToIncrease > difference {
+			// only increase the difference
+			amountToIncrease = difference
+		}
+		db.IncreaseEmergencyFund(amountToIncrease)
 	}
 
 	spendingMoney := db.GetSpendingMoney() + netTransactionChange
@@ -128,7 +135,7 @@ func MonthlyTask() {
 	// Set the estimated spending money value to the spending money, with next months predicted outcome
 	// and deducting the set in stone monthly expenses. The expenses should be automatically registered as transactions because
 	// otherwise you would not be able to lower the spending money when you make purchases
-	db.SetEstimatedSpendingMoney(spendingMoney + db.GetExpectedMonthlyIncome() - db.GetMonthlyExpenses())
+	db.SetEstimatedSpendingMoney(spendingMoney + db.GetExpectedMonthlyIncome() + db.GetMonthlyExpenses())
 
 }
 
@@ -136,7 +143,7 @@ func addMonthlyTransactions(emergencyAmount float32, emergencyMax float32) {
 	// add expenses as transactions
 	var expenses []db.MonthlyExpense = db.GetAllMonthlyExpensesStructs()
 	for i := 0; i < len(expenses); i++ {
-		db.AddTransaction(&db.Transaction{Amount: -expenses[i].Amount, Date: time.Now().AddDate(0, 0, -1), Description: fmt.Sprintf("Expenses: $%v %vmonthly payment", expenses[i].Amount, expenses[i].Name)})
+		db.AddTransaction(&db.Transaction{Amount: -expenses[i].Amount, Date: time.Now().AddDate(0, 0, -1), Description: fmt.Sprintf("Expenses: $%v %v monthly payment", expenses[i].Amount, expenses[i].Name)})
 	}
 
 	// The emergency fund takes half of the netTransaction change if it is positive.
@@ -144,6 +151,9 @@ func addMonthlyTransactions(emergencyAmount float32, emergencyMax float32) {
 	savings := db.GetSavingsPerMonth()
 	estimatedSpendingMoney := db.GetEstimatedSpendingMoney()
 	if savings >= estimatedSpendingMoney {
+		// only assigning savings to this to calculate how much
+		// to add to emergency fund later. This makes it so emergency fund will
+		// not take more than we are estimated to have
 		savings = estimatedSpendingMoney
 	}
 
@@ -195,7 +205,9 @@ func addMonthlyTransactions(emergencyAmount float32, emergencyMax float32) {
 			amountToSavePerGoal = sum / float32(len(goals))
 		}
 		for i := 0; i < len(goals); i++ {
-			goals[i].SaveMonthlyAmount(amountToSavePerGoal)
+			goal := goals[i]
+			goal.SaveMonthlyAmount(amountToSavePerGoal)
+
 		}
 	}
 }

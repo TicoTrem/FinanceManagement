@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -70,4 +71,17 @@ func CreateNewOrInt(prompt string, minimum int, maximum int, formatVariables ...
 			return parsedInt, false, exit
 		}
 	}
+}
+
+// returns a negative sign in front of the $ if the float is negative
+func GetMoneyString(money float32) string {
+	var estimatedMoneyString string
+
+	if money < 0 {
+		absEstimatedSpendingMoney := math.Abs(float64(money))
+		estimatedMoneyString = fmt.Sprintf("-$%.2f", absEstimatedSpendingMoney)
+	} else {
+		estimatedMoneyString = fmt.Sprintf("$%.2f", money)
+	}
+	return estimatedMoneyString
 }

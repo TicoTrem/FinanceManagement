@@ -40,7 +40,7 @@ func HandleDisplayEditTransactions() {
 	var selectedTransaction db.Transaction
 	var parsedInt int
 	for i := 0; i < len(transactions); i++ {
-		fmt.Printf("%v:\tAmount: %v\t Date: %v\tDescription: %v\n", i+1, transactions[i].Amount, transactions[i].Date.Local().Format(time.DateTime), transactions[i].Description)
+		fmt.Printf("%v:\tAmount: %v\t Date: %v\tDescription: %v\n", i+1, utils.GetMoneyString(transactions[i].Amount), transactions[i].Date.Local().Format(time.DateTime), transactions[i].Description)
 	}
 	for {
 		response, exit := utils.GetUserResponse("If you would like to edit or delete one of these transactions, please enter the number of the transaction")
