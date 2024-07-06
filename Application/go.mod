@@ -1,4 +1,4 @@
-module main
+module Application
 
 go 1.22.3
 

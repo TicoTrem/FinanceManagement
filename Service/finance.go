@@ -9,17 +9,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-var spendingMoney float32 = 0
-var estimatedSpendingMoney float32 = 0
-var estimatedIncome float32 = 0
-var totalChangeThisMonth float32 = 0
-
 var Database *sql.DB
-
-type Transaction struct {
-	amount float32
-	date   time.Time
-}
 
 func StartFinance() {
 	go queueMonthlyTask()
@@ -39,7 +29,7 @@ func StartFinance() {
 	fmt.Println("2")
 	db.Close()
 
-	// Create the database for real
+	// Create the database object for real
 	Database, err = sql.Open("mysql", "root:password@/Finance")
 	if err != nil {
 		log.Fatal(err)
@@ -50,19 +40,8 @@ func StartFinance() {
 	createTables()
 
 	// get the starting spending money (intensive operation)
-	calculateSpendingMoney()
-	addTransaction(53.2, time.Now())
-	var transactions []Transaction = getAllTransactions()
-
-	printTransactions(transactions)
 
 	fmt.Println(db.Ping())
-}
-
-func printTransactions(transactions []Transaction) {
-	for i := 0; i < len(transactions); i++ {
-		fmt.Printf("Transaction %v:\nAmount: %v\n Date: %v\n", i+1, transactions[i].amount, transactions[i].date)
-	}
 }
 
 func queueMonthlyTask() {
@@ -87,30 +66,8 @@ func monthlyTask() {
 // This will calculate the net transaction change (which includes income and expenses)
 // Then this will change estimated spending money to this value
 func calculateMonthSpendingMoney() float32 {
-	return 5.0
-}
-
-// When the program first comes online, calculate the spending money based on the transactions
-// This is to prevent any desyncs from not being online during the start of the month or other
-func calculateSpendingMoney() {
-	fmt.Println("calculate spending money called")
-}
-
-func addTransaction(amount float32, date time.Time) {
-	transaction := Transaction{amount: amount, date: date}
-	query, err := Database.Prepare("INSERT INTO Transactions (amount, date) VALUES (?, ?);")
-	if err != nil {
-		log.Fatal(err)
-	}
-	result, err := query.Exec(transaction.amount, transaction.date)
-	if err != nil {
-		log.Fatal(err)
-	}
-	numRows, err := result.RowsAffected()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("There were %v rows inserted into the Transactions table\n", numRows)
+	// Database.Query()
+	return 15.9
 }
 
 // creates the tables needed for the application if they are not created already
@@ -153,34 +110,4 @@ func createTables() {
 	// if numRows > 0 {
 
 	// }
-}
-
-// This function will return all of the transactions in the Transactions table
-func getAllTransactions() []Transaction {
-
-	var transactions []Transaction
-	rows, err := Database.Query("SELECT * FROM Transactions;")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var transaction Transaction
-		var id int
-		var dateString string
-		// sql date is wanting to return a string
-		err := rows.Scan(&id, &transaction.amount, &dateString)
-		if err != nil {
-			log.Fatal(err)
-		}
-		parsedDate, err := time.Parse("2006-01-02 15:04:05", dateString)
-		if err != nil {
-			log.Fatal("Failed to parse SQL string into a time object:", err)
-		}
-		transaction.date = parsedDate
-		transactions = append(transactions, transaction)
-	}
-
-	return transactions
 }
