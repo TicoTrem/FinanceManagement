@@ -9,10 +9,9 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-var Database *sql.DB
+
 
 func StartFinance() {
-	go queueMonthlyTask()
 
 	// create database if it doesn't already exist
 	db, err := sql.Open("mysql", "root:password@/")
@@ -42,6 +41,8 @@ func StartFinance() {
 	// get the starting spending money (intensive operation)
 
 	fmt.Println(db.Ping())
+
+	go queueMonthlyTask()
 }
 
 func queueMonthlyTask() {
@@ -66,7 +67,40 @@ func monthlyTask() {
 // This will calculate the net transaction change (which includes income and expenses)
 // Then this will change estimated spending money to this value
 func calculateMonthSpendingMoney() float32 {
-	// Database.Query()
+	// get the first of last month
+	today := time.Now()
+	if today.Day() != 1 {
+		log.Fatal("The monthly task was ran on a day other than the 1st. Please fix this!")
+	}
+
+	firstOfLastMonth := today.AddDate(0, -1, 0)
+
+	// this will add a month, the subtract the amount of days, which takes us to the last day of the month
+	lastOfLastMonth := firstOfLastMonth.AddDate(0, 1, -firstOfLastMonth.Day())
+	format := "2006-01-02"
+	rows, err := Database.Query(fmt.Sprintf("SELECT * FROM Transactions WHERE date BETWEEN ('%v', '%v')", firstOfLastMonth.Format(format), lastOfLastMonth.Format(format)))
+	if err != nil {
+		log.Fatal("Querying all transactions last month failed: " + err.Error())
+	}
+
+	netTransactionChange := 0
+
+	for rows.Next() {
+		var transaction Transaction
+		var id int
+		var dateString string
+		// sql date is wanting to return a string
+		err := rows.Scan(&id, &transaction.amount, &dateString)
+		if err != nil {
+			log.Fatal(err)
+		}
+		parsedDate, err := time.Parse("2006-01-02 15:04:05", dateString)
+		if err != nil {
+			log.Fatal("Failed to parse SQL string into a time object:", err)
+		}
+		transaction.date = parsedDate
+		transactions = append(transactions, transaction)
+
 	return 15.9
 }
 
