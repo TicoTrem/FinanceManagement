@@ -11,12 +11,10 @@ import (
 	"github.com/ticotrem/shared"
 )
 
-var Database *sql.DB
-
 func main() {
 
 	db, err := sql.Open("mysql", "root:password@/Finance")
-	Database = db
+	shared.Database = db
 	// You started the application before ever running the service
 
 	// how can I make sure the service is currently running?
