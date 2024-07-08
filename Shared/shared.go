@@ -135,6 +135,23 @@ func createTables() {
 
 }
 
+func AddTransaction(amount float32, date time.Time) {
+	transaction := Transaction{Amount: amount, Date: date}
+	query, err := Database.Prepare("INSERT INTO Transactions (amount, date) VALUES (?, ?);")
+	if err != nil {
+		log.Fatal(err)
+	}
+	result, err := query.Exec(transaction.Amount, transaction.Date)
+	if err != nil {
+		log.Fatal(err)
+	}
+	numRows, err := result.RowsAffected()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("There were %v rows inserted into the Transactions table\n", numRows)
+}
+
 // This function will return the expectedIncome variable from the Variables table
 func GetSpendingMoney() float32 {
 	row := Database.QueryRow("SELECT spendingMoney FROM Variables")
@@ -171,6 +188,13 @@ func SetEstimatedSpendingMoney(estimatedSpendingMoney float32) {
 	}
 }
 
+func GetExpectedMonthlyIncome() float32 {
+	row := Database.QueryRow("SELECT estimatedIncome FROM Variables")
+	var estimatedIncome float32
+	row.Scan(&estimatedIncome)
+	return estimatedIncome
+}
+
 func SetExpectedMonthlyIncome(expectedMonthlyIncome float32) {
 	_, err := Database.Exec("UPDATE Variables SET expectedMonthlyIncome = ?", expectedMonthlyIncome)
 	if err != nil {
@@ -178,7 +202,7 @@ func SetExpectedMonthlyIncome(expectedMonthlyIncome float32) {
 	}
 }
 
-func GetAllMonthlyExpenses() []MonthlyExpense {
+func GetAllMonthlyExpensesStructs() []MonthlyExpense {
 	rows, err := Database.Query("SELECT * FROM MonthlyExpenses")
 	if err != nil {
 		log.Fatal(err)
@@ -202,4 +226,13 @@ func GetAllMonthlyExpenses() []MonthlyExpense {
 	}
 
 	return monthlyExpenses
+}
+
+func GetMonthlyExpenses() float32 {
+	expenses := GetAllMonthlyExpensesStructs()
+	var sumOfExpenses float32 = 0.0
+	for i := 0; i < len(expenses); i++ {
+		sumOfExpenses += expenses[i].Amount
+	}
+	return sumOfExpenses
 }
