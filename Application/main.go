@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -21,34 +22,106 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Spending money is: %v", calculateSpendingMoney())
 
-	fmt.Println(`Welcome to Finance!\nWhat would you like to do?
+	fmt.Printf(`Welcome to Finance!
+				Spending money is: %v
+				What would you like to do?
 						1) Add a transaction
 						2) Display all transactions
 						3) Change 'Expected' values
 						4) View and edit monthly expenses
-						5) Add a new goal to save up for`)
-
-	var response string
-	_, err = fmt.Scanln(&response)
-	if err != nil {
-		log.Fatal(err)
-	}
+						5) Add a new goal to save up for`, shared.GetSpendingMoney())
 
 	for {
-		parsedInt, err := strconv.Atoi(response)
+		var response string
+		_, err = fmt.Scanln(&response)
 		if err != nil {
+			log.Fatal(err)
+		}
+		switch response {
+		case "1":
+			handleAddTransaction()
+		case "2":
+			printTransactions(shared.GetAllTransactions(nil, nil))
+		case "3":
+			handleChangeExpectedValues()
+		case "4":
+			handleViewAndEditMonthlyExpenses()
+		case "5":
+			handleAddNewGoal()
+		default:
 			fmt.Println("Invalid input")
 			continue
 		}
-		switch parsedInt {
-		case 1:
-			handleAddTransaction()
-		case 2:
-			printTransactions(shared.GetAllTransactions())
-		case 3:
+		break
+	}
+
+}
+
+func handleViewAndEditMonthlyExpenses() {
+	monthlyExpenses := shared.GetAllMonthlyExpenses()
+	for i := 0; i < len(monthlyExpenses); i++ {
+		fmt.Printf("Monthly expense %v:\nName: %v\nAmount: %v\n", i+1, monthlyExpenses[i].Name, monthlyExpenses[i].Amount)
+	}
+	fmt.Println("Enter the number of the expense you would like to edit, or 'C' to create a new one")
+	var response string
+	_, err := fmt.Scanln(&response)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if strings.ToLower(response) == "c" {
+
+	} else {
+		editMonthlyExpense(response, monthlyExpenses)
+	}
+
+}
+
+func editMonthlyExpense(response string, monthlyExpenses []shared.MonthlyExpense) {
+	var selectedExpense shared.MonthlyExpense
+	for {
+		parsedInt, err := strconv.Atoi(response)
+		if err != nil || parsedInt < 0 || parsedInt > len(monthlyExpenses) {
+			fmt.Println("Invalid input")
 			continue
+		}
+
+		parsedInt, err = strconv.Atoi(response)
+		if err != nil {
+			fmt.Println("Invalid Input")
+			continue
+		}
+		selectedExpense = monthlyExpenses[parsedInt-1]
+		break
+	}
+
+	fmt.Printf(`You have selected %v. Please select an option:
+	1) Change the name
+	2) Change the amount
+	3) Delete the expense`, selectedExpense.Name)
+
+	for {
+		_, err := fmt.Scanln(&response)
+		if err != nil {
+			log.Fatal("Failed to read user input: " + err.Error())
+		}
+		switch response {
+		case "1":
+			fmt.Println("Please enter the new name for this expense: ")
+			var response string
+			_, err := fmt.Scanln(&response)
+			if err != nil {
+				log.Fatal("Failed to read user input: " + err.Error())
+			}
+			_, err = shared.Database.Exec("UPDATE MonthlyExpense SET name WHERE id = ?", response, selectedExpense.Id)
+			if err != nil {
+				log.Fatal("Failed to update the expense name: " + err.Error())
+			}
+			fmt.Println("The expense name has been updated to " + response)
+		case "2":
+
+		case "3":
+
 		default:
 			fmt.Println("Invalid input")
 			continue
@@ -81,7 +154,7 @@ func handleAddTransaction() {
 
 func addTransaction(amount float32, date time.Time) {
 	transaction := shared.Transaction{Amount: amount, Date: date}
-	query, err := Database.Prepare("INSERT INTO Transactions (amount, date) VALUES (?, ?);")
+	query, err := shared.Database.Prepare("INSERT INTO Transactions (amount, date) VALUES (?, ?);")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -99,7 +172,7 @@ func addTransaction(amount float32, date time.Time) {
 // When the program first comes online, calculate the spending money based on the transactions
 // This is to prevent any desyncs from not being online during the start of the month or other
 func calculateSpendingMoney() float32 {
-	transactions := shared.GetAllTransactions()
+	transactions := shared.GetAllTransactions(nil, nil)
 
 	var spendingMoney float32 = 0.0
 	for i := 0; i < len(transactions); i++ {
@@ -112,4 +185,24 @@ func printTransactions(transactions []shared.Transaction) {
 	for i := 0; i < len(transactions); i++ {
 		fmt.Printf("Transaction %v:\nAmount: %v\n Date: %v\n", i+1, transactions[i].Amount, transactions[i].Date)
 	}
+}
+
+func handleChangeExpectedValues() {
+	fmt.Println("What is your expected monthly income?")
+	var incomeString string
+	_, err := fmt.Scanln(&incomeString)
+	if err != nil {
+		fmt.Println("Your change could not be made: " + err.Error())
+		return
+	}
+	parsedIncome, err := strconv.ParseFloat(incomeString, 32)
+	if err != nil {
+		fmt.Println("Your change could not be made: " + err.Error())
+		return
+	}
+	income := float32(parsedIncome)
+
+	shared.SetExpectedMonthlyIncome(income)
+
+	fmt.Printf("Your expected monthly income has been set to %v. Estimations should be updated immediately!", income)
 }
