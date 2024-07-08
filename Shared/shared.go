@@ -9,13 +9,16 @@ import (
 
 var Database *sql.DB
 
-func SomeFunction() string {
-	return "Hello from shared package"
-}
-
 type Transaction struct {
+	Id     int
 	Amount float32
 	Date   time.Time
+}
+
+type MonthlyExpense struct {
+	Id     int
+	Name   string
+	Amount float32
 }
 
 // This function will return all of the transactions in the Transactions table
@@ -23,21 +26,12 @@ type Transaction struct {
 func GetAllTransactions(dBegin *time.Time, dEnd *time.Time) []Transaction {
 
 	var transactions []Transaction
-	// get the first of last month
-	today := time.Now()
-	if today.Day() != 1 {
-		log.Fatal("The monthly task was ran on a day other than the 1st. Please fix this!")
-	}
 
-	firstOfLastMonth := today.AddDate(0, -1, 0)
-
-	// this will add a month, the subtract the amount of days, which takes us to the last day of the month
-	lastOfLastMonth := firstOfLastMonth.AddDate(0, 1, -firstOfLastMonth.Day())
 	format := "2006-01-02"
 	var rows *sql.Rows
 	var err error
-	if dBegin == nil || dEnd == nil {
-		rows, err = Database.Query(fmt.Sprintf("SELECT * FROM Transactions WHERE date BETWEEN ('%v', '%v')", firstOfLastMonth.Format(format), lastOfLastMonth.Format(format)))
+	if dBegin != nil && dEnd != nil {
+		rows, err = Database.Query(fmt.Sprintf("SELECT * FROM Transactions WHERE date BETWEEN ('%v', '%v')", dBegin.Format(format), dEnd.Format(format)))
 	} else {
 		rows, err = Database.Query("SELECT * FROM Transactions")
 	}
@@ -50,10 +44,9 @@ func GetAllTransactions(dBegin *time.Time, dEnd *time.Time) []Transaction {
 	for rows.Next() {
 
 		var transaction Transaction
-		var id int
 		var dateString string
 		// sql date is wanting to return a string
-		err := rows.Scan(&id, &transaction.Amount, &dateString)
+		err := rows.Scan(&transaction.Id, &transaction.Amount, &dateString)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -66,4 +59,147 @@ func GetAllTransactions(dBegin *time.Time, dEnd *time.Time) []Transaction {
 	}
 
 	return transactions
+}
+
+// This function will setup the database and create the tables if they don't exist
+func SetupDatabase() {
+
+	db, err := sql.Open("mysql", "root:password@/")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("1")
+	fmt.Println(db.Ping())
+
+	_, err = db.Exec("CREATE DATABASE IF NOT EXISTS Finance")
+	if err != nil {
+		log.Fatal(err)
+	}
+	db.Close()
+
+	// Create the database object for real
+	Database, err = sql.Open("mysql", "root:password@/Finance")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer Database.Close()
+
+	createTables()
+
+	// get the starting spending money (intensive operation)
+
+	if Database.Ping() != nil {
+		log.Fatal("Failed to ping database")
+	}
+}
+
+// creates the tables needed for the application if they are not created already
+// also populates the Variables table with a row containing all 0.0 if there is not already a row
+func createTables() {
+	_, err := Database.Exec(`CREATE TABLE IF NOT EXISTS Transactions (
+		id INT AUTO_INCREMENT,
+		amount FLOAT(16,2) NOT NULL,
+		date DATETIME NOT NULL,
+		PRIMARY KEY(id));`)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = Database.Exec(`CREATE TABLE IF NOT EXISTS MonthlyExpenses (
+		id INT AUTO_INCREMENT,
+		name VARCHAR(255) NOT NULL,
+		amount FLOAT(16,2) NOT NULL,
+		PRIMARY KEY(id));`)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = Database.Exec(`CREATE TABLE IF NOT EXISTS Variables (
+	spendingMoney FLOAT(16,2) DEFAULT 0.0,
+	estimatedSpendingMoney FLOAT(16,2) DEFAULT 0.0,
+	estimatedIncome FLOAT(16,2) DEFAULT 0.0;`)
+	if err != nil {
+		log.Fatal(err)
+	}
+	row := Database.QueryRow(`SELECT COUNT(*) FROM Variables`)
+	var count int
+	err = row.Scan(&count)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	// there are no rows in the table
+	if count == 0 {
+		Database.Exec(`INSERT INTO Variables () VALUES ()`)
+	}
+
+}
+
+// This function will return the expectedIncome variable from the Variables table
+func GetSpendingMoney() float32 {
+	row := Database.QueryRow("SELECT spendingMoney FROM Variables")
+	var spendingMoney float32
+	err := row.Scan(&spendingMoney)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return spendingMoney
+}
+
+// This function will return the estimatedExpectedIncome variable from the Variables table
+func GetEstimatedSpendingMoney() float32 {
+	row := Database.QueryRow("SELECT estimatedSpendingMoney FROM Variables")
+	var estimatedSpendingMoney float32
+	err := row.Scan(&estimatedSpendingMoney)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return estimatedSpendingMoney
+}
+
+func SetSpendingMoney(spendingMoney float32) {
+	_, err := Database.Exec("UPDATE Variables SET spendingMoney = ?", spendingMoney)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func SetEstimatedSpendingMoney(estimatedSpendingMoney float32) {
+	_, err := Database.Exec("UPDATE Variables SET estimatedSpendingMoney = ?", estimatedSpendingMoney)
+	if err != nil {
+		log.Fatal("Failed to update the estimatedSpendingMoney variable: " + err.Error())
+	}
+}
+
+func SetExpectedMonthlyIncome(expectedMonthlyIncome float32) {
+	_, err := Database.Exec("UPDATE Variables SET expectedMonthlyIncome = ?", expectedMonthlyIncome)
+	if err != nil {
+		log.Fatal("Failed to update the expectedMonthlyIncome variable: " + err.Error())
+	}
+}
+
+func GetAllMonthlyExpenses() []MonthlyExpense {
+	rows, err := Database.Query("SELECT * FROM MonthlyExpenses")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer rows.Close()
+
+	var monthlyExpenses []MonthlyExpense
+	var id int
+
+	for rows.Next() {
+
+		var monthlyExpense MonthlyExpense
+
+		// sql date is wanting to return a string
+		err := rows.Scan(&id, &monthlyExpense.Name, &monthlyExpense.Amount)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		monthlyExpenses = append(monthlyExpenses, monthlyExpense)
+	}
+
+	return monthlyExpenses
 }
