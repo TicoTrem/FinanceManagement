@@ -31,11 +31,27 @@ func queueMonthlyTask() {
 }
 
 func monthlyTask() {
+
+	// add the monthly transactions for that month and set the date as the last day of the previous month
+	// this is so you can make changes to the prices of the monthly expenses and have it reflected in that months transactions
+	// TODO: make sure the estimated spending money is updated when the user alters a monthly expense value, it is assumed to be active THAT MONTH
+	// so it must be updated.
+
+	expenses := shared.GetAllMonthlyExpensesStructs()
+	for i := 0; i < len(expenses); i++ {
+		shared.AddTransaction(expenses[i].Amount, time.Now().AddDate(0, 0, -1))
+	}
+
 	netTransactionChange := calculateNetTransactionChange()
 
 	spendingMoney := shared.GetSpendingMoney() + netTransactionChange
 	shared.SetSpendingMoney(spendingMoney)
-	shared.SetEstimatedSpendingMoney(spendingMoney)
+
+	// Set the estimated spending money value to the spending money, with next months predicted outcome
+	// and deducting the set in stone monthly expenses. The expenses should be automatically registered as transactions because
+	// otherwise you would not be able to lower the spending money when you make purchases
+	shared.SetEstimatedSpendingMoney(spendingMoney + shared.GetExpectedMonthlyIncome() - shared.GetMonthlyExpenses())
+
 }
 
 // This will calculate the net transaction change (which includes income and expenses)

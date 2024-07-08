@@ -12,6 +12,9 @@ import (
 	"github.com/ticotrem/shared"
 )
 
+// TODO: Make sure we are closing all database connections (defer rows.close())
+// I am havinig performance and battery issues from the MySQL container
+
 func main() {
 
 	db, err := sql.Open("mysql", "root:password@/Finance")
@@ -27,12 +30,13 @@ func main() {
 				Spending money is: %v
 				What would you like to do?
 						1) Add a transaction
-						2) Display all transactions
+						2) Display and edit all transactions
 						3) Change 'Expected' values
 						4) View and edit monthly expenses
 						5) Add a new goal to save up for`, shared.GetSpendingMoney())
 
 	for {
+		// TODO: When you edit or delete a transaction, make it so it updates everything properly
 		var response string
 		_, err = fmt.Scanln(&response)
 		if err != nil {
@@ -59,7 +63,7 @@ func main() {
 }
 
 func handleViewAndEditMonthlyExpenses() {
-	monthlyExpenses := shared.GetAllMonthlyExpenses()
+	monthlyExpenses := shared.GetAllMonthlyExpensesStructs()
 	for i := 0; i < len(monthlyExpenses); i++ {
 		fmt.Printf("Monthly expense %v:\nName: %v\nAmount: %v\n", i+1, monthlyExpenses[i].Name, monthlyExpenses[i].Amount)
 	}
@@ -113,13 +117,32 @@ func editMonthlyExpense(response string, monthlyExpenses []shared.MonthlyExpense
 			if err != nil {
 				log.Fatal("Failed to read user input: " + err.Error())
 			}
-			_, err = shared.Database.Exec("UPDATE MonthlyExpense SET name WHERE id = ?", response, selectedExpense.Id)
+			_, err = shared.Database.Exec("UPDATE MonthlyExpense SET name = ? WHERE id = ?", response, selectedExpense.Id)
 			if err != nil {
 				log.Fatal("Failed to update the expense name: " + err.Error())
 			}
 			fmt.Println("The expense name has been updated to " + response)
 		case "2":
-
+			fmt.Println("Please enter the new monthly amount for this expense: ")
+			var response string
+			_, err := fmt.Scanln(&response)
+			if err != nil {
+				log.Fatal("Failed to read user input: " + err.Error())
+			}
+			float64bit, err := strconv.ParseFloat(response, 32)
+			if err != nil {
+				fmt.Println("The value could not be converted in to a float!")
+				continue
+			}
+			oldAmount := selectedExpense.Amount
+			newAmount := float32(float64bit)
+			_, err = shared.Database.Exec("UPDATE MonthlyExpense SET amount = ? WHERE id = ?", newAmount, selectedExpense.Id)
+			if err != nil {
+				log.Fatal("Failed update database expense amount: " + err.Error())
+			}
+			amountChanged := newAmount - oldAmount
+			// updated the estimated spending money
+			shared.SetEstimatedSpendingMoney(shared.GetEstimatedSpendingMoney() + amountChanged)
 		case "3":
 
 		default:
