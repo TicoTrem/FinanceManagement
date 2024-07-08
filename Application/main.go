@@ -8,14 +8,10 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/ticotrem/shared"
 )
 
 var Database *sql.DB
-
-type Transaction struct {
-	amount float32
-	date   time.Time
-}
 
 func main() {
 
@@ -52,7 +48,7 @@ func main() {
 		case 1:
 			handleAddTransaction()
 		case 2:
-			printTransactions(getAllTransactions())
+			printTransactions(shared.GetAllTransactions())
 		case 3:
 			continue
 		default:
@@ -86,12 +82,12 @@ func handleAddTransaction() {
 }
 
 func addTransaction(amount float32, date time.Time) {
-	transaction := Transaction{amount: amount, date: date}
+	transaction := shared.Transaction{Amount: amount, Date: date}
 	query, err := Database.Prepare("INSERT INTO Transactions (amount, date) VALUES (?, ?);")
 	if err != nil {
 		log.Fatal(err)
 	}
-	result, err := query.Exec(transaction.amount, transaction.date)
+	result, err := query.Exec(transaction.Amount, transaction.Date)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -102,50 +98,20 @@ func addTransaction(amount float32, date time.Time) {
 	fmt.Printf("There were %v rows inserted into the Transactions table\n", numRows)
 }
 
-// This function will return all of the transactions in the Transactions table
-func getAllTransactions() []Transaction {
-
-	var transactions []Transaction
-	rows, err := Database.Query("SELECT * FROM Transactions;")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var transaction Transaction
-		var id int
-		var dateString string
-		// sql date is wanting to return a string
-		err := rows.Scan(&id, &transaction.amount, &dateString)
-		if err != nil {
-			log.Fatal(err)
-		}
-		parsedDate, err := time.Parse("2006-01-02 15:04:05", dateString)
-		if err != nil {
-			log.Fatal("Failed to parse SQL string into a time object:", err)
-		}
-		transaction.date = parsedDate
-		transactions = append(transactions, transaction)
-	}
-
-	return transactions
-}
-
-func printTransactions(transactions []Transaction) {
-	for i := 0; i < len(transactions); i++ {
-		fmt.Printf("Transaction %v:\nAmount: %v\n Date: %v\n", i+1, transactions[i].amount, transactions[i].date)
-	}
-}
-
 // When the program first comes online, calculate the spending money based on the transactions
 // This is to prevent any desyncs from not being online during the start of the month or other
 func calculateSpendingMoney() float32 {
-	transactions := getAllTransactions()
+	transactions := shared.GetAllTransactions()
 
 	var spendingMoney float32 = 0.0
 	for i := 0; i < len(transactions); i++ {
-		spendingMoney += float32(transactions[i].amount)
+		spendingMoney += float32(transactions[i].Amount)
 	}
 	return spendingMoney
+}
+
+func printTransactions(transactions []shared.Transaction) {
+	for i := 0; i < len(transactions); i++ {
+		fmt.Printf("Transaction %v:\nAmount: %v\n Date: %v\n", i+1, transactions[i].Amount, transactions[i].Date)
+	}
 }
