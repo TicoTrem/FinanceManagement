@@ -52,7 +52,7 @@ func StartFinance() {
 	// get the starting spending money (intensive operation)
 	calculateSpendingMoney()
 	addTransaction(53.2, time.Now())
-	var transactions []Transaction = getAllTransactions()
+	var transactions []Transaction = GetUserResponse()
 
 	printTransactions(transactions)
 

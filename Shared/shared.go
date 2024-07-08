@@ -9,18 +9,6 @@ import (
 
 var Database *sql.DB
 
-type Transaction struct {
-	Id     int
-	Amount float32
-	Date   time.Time
-}
-
-type MonthlyExpense struct {
-	Id     int
-	Name   string
-	Amount float32
-}
-
 // This function will return all of the transactions in the Transactions table
 // if you supply the dBegin and dEnd with nil, it will return all transactions
 func GetAllTransactions(dBegin *time.Time, dEnd *time.Time) []Transaction {
@@ -31,9 +19,9 @@ func GetAllTransactions(dBegin *time.Time, dEnd *time.Time) []Transaction {
 	var rows *sql.Rows
 	var err error
 	if dBegin != nil && dEnd != nil {
-		rows, err = Database.Query(fmt.Sprintf("SELECT * FROM Transactions WHERE date BETWEEN ('%v', '%v')", dBegin.Format(format), dEnd.Format(format)))
+		rows, err = Database.Query(fmt.Sprintf("SELECT * FROM Transactions WHERE date BETWEEN ('%v', '%v') ORDER BY date", dBegin.Format(format), dEnd.Format(format)))
 	} else {
-		rows, err = Database.Query("SELECT * FROM Transactions")
+		rows, err = Database.Query("SELECT * FROM Transactions ORDER BY date")
 	}
 	if err != nil {
 		log.Fatal("Querying all transactions last month failed: " + err.Error())
@@ -133,99 +121,6 @@ func createTables() {
 		Database.Exec(`INSERT INTO Variables () VALUES ()`)
 	}
 
-}
-
-func AddTransaction(amount float32, date time.Time) {
-	transaction := Transaction{Amount: amount, Date: date}
-	query, err := Database.Prepare("INSERT INTO Transactions (amount, date) VALUES (?, ?);")
-	if err != nil {
-		log.Fatal(err)
-	}
-	result, err := query.Exec(transaction.Amount, transaction.Date)
-	if err != nil {
-		log.Fatal(err)
-	}
-	numRows, err := result.RowsAffected()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("There were %v rows inserted into the Transactions table\n", numRows)
-}
-
-// This function will return the expectedIncome variable from the Variables table
-func GetSpendingMoney() float32 {
-	row := Database.QueryRow("SELECT spendingMoney FROM Variables")
-	var spendingMoney float32
-	err := row.Scan(&spendingMoney)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return spendingMoney
-}
-
-// This function will return the estimatedExpectedIncome variable from the Variables table
-func GetEstimatedSpendingMoney() float32 {
-	row := Database.QueryRow("SELECT estimatedSpendingMoney FROM Variables")
-	var estimatedSpendingMoney float32
-	err := row.Scan(&estimatedSpendingMoney)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return estimatedSpendingMoney
-}
-
-func SetSpendingMoney(spendingMoney float32) {
-	_, err := Database.Exec("UPDATE Variables SET spendingMoney = ?", spendingMoney)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
-func SetEstimatedSpendingMoney(estimatedSpendingMoney float32) {
-	_, err := Database.Exec("UPDATE Variables SET estimatedSpendingMoney = ?", estimatedSpendingMoney)
-	if err != nil {
-		log.Fatal("Failed to update the estimatedSpendingMoney variable: " + err.Error())
-	}
-}
-
-func GetExpectedMonthlyIncome() float32 {
-	row := Database.QueryRow("SELECT estimatedIncome FROM Variables")
-	var estimatedIncome float32
-	row.Scan(&estimatedIncome)
-	return estimatedIncome
-}
-
-func SetExpectedMonthlyIncome(expectedMonthlyIncome float32) {
-	_, err := Database.Exec("UPDATE Variables SET expectedMonthlyIncome = ?", expectedMonthlyIncome)
-	if err != nil {
-		log.Fatal("Failed to update the expectedMonthlyIncome variable: " + err.Error())
-	}
-}
-
-func GetAllMonthlyExpensesStructs() []MonthlyExpense {
-	rows, err := Database.Query("SELECT * FROM MonthlyExpenses")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer rows.Close()
-
-	var monthlyExpenses []MonthlyExpense
-	var id int
-
-	for rows.Next() {
-
-		var monthlyExpense MonthlyExpense
-
-		// sql date is wanting to return a string
-		err := rows.Scan(&id, &monthlyExpense.Name, &monthlyExpense.Amount)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		monthlyExpenses = append(monthlyExpenses, monthlyExpense)
-	}
-
-	return monthlyExpenses
 }
 
 func GetMonthlyExpenses() float32 {
