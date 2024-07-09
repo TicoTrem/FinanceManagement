@@ -64,11 +64,7 @@ func calculateSpendingMoney() float32 {
 
 	var spendingMoney float32 = 0.0
 	for i := 0; i < len(transactions); i++ {
-		spendingMoney += float32(transactions[i].Amount)
+		spendingMoney += transactions[i].Amount
 	}
 	return spendingMoney
-}
-
-func printTransactions(transactions []shared.Transaction) {
-
 }

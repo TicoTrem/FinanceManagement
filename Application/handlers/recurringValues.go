@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/ticotrem/finance/shared"
 	"github.com/ticotrem/finance/shared/utils"
@@ -30,35 +31,52 @@ func HandleChangeExpectedIncome() {
 // and goals you set a monthly amount you can afford and it will tell you the date you will have enough
 func HandleAddNewGoal() {
 	goal := shared.Goal{}
-	goal.Name = utils.GetUserResponse(`What would you like to name this goal?`)
+	var exit bool
+	goal.Name, exit = utils.GetUserResponse(`What would you like to name this goal?`)
+	if exit {
+		return
+	}
+	goal.Amount, exit = utils.GetUserResponseFloat("How much must be saved to complete this goal?")
+	if exit {
+		return
+	}
 
 	for {
-		goalAmountString, exit := utils.GetUserResponse("How much must be saved to complete this goal?")
-		parsedFloat, err := strconv.ParseFloat(goalAmountString, 32)
-		if err != nil {
-			fmt.Println("Invalid Input")
-			continue
-		}
-		goal.Amount = float32(parsedFloat)
-
-
-	
 		response, exit := utils.GetUserResponse(`How would you like to create this goal?
 							1) Set an amount you can afford per month
 							2) Set a date you would like the goal met by`)
 		if exit {
 			return
 		}
-		select response {
+		switch response {
 		case "1":
-			response, exit = utils.GetUserResponse("What is the amount you can afford per month?")
-			if exit {
-				return
+			for {
+				goal.AmountPerMonth, exit = utils.GetUserResponseFloat("What is the amount you can afford per month?")
+				if exit {
+					return
+				}
 			}
-			parsedFloat := strconv.ParseFloat(response, 32)
-			goal.AmountPerMonth = float32(parsedFloat)
+		case "2":
+			for {
+				yearInt, exit := utils.GetUserResponseInt("What year would you like the goal to be met by?")
+				if exit {
+					return
+				}
+				monthInt, exit := utils.GetUserResponseInt("What month would you like the goal to be met by?")
+				if exit {
+					return
+				}
+				dayInt, exit := utils.GetUserResponseInt("What day would you like the goal to be met by?")
+				if exit {
+					return
+				}
+				goal.DateComplete = time.Date(yearInt, time.Month(monthInt), dayInt, 0, 0, 0, 0, time.Local)
+			}
+		default:
+			fmt.Println("Invalid Input")
 		}
-			
+		break
 	}
-	
+	shared.AddGoal(goal)
+
 }

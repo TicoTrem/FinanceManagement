@@ -4,50 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"time"
 )
 
 var Database *sql.DB
-
-// This function will return all of the transactions in the Transactions table
-// if you supply the dBegin and dEnd with nil, it will return all transactions
-func GetAllTransactions(dBegin *time.Time, dEnd *time.Time) []Transaction {
-
-	var transactions []Transaction
-
-	format := "2006-01-02"
-	var rows *sql.Rows
-	var err error
-	if dBegin != nil && dEnd != nil {
-		rows, err = Database.Query(fmt.Sprintf("SELECT * FROM Transactions WHERE date BETWEEN ('%v', '%v') ORDER BY date", dBegin.Format(format), dEnd.Format(format)))
-	} else {
-		rows, err = Database.Query("SELECT * FROM Transactions ORDER BY date")
-	}
-	if err != nil {
-		log.Fatal("Querying all transactions last month failed: " + err.Error())
-	}
-
-	defer rows.Close()
-
-	for rows.Next() {
-
-		var transaction Transaction
-		var dateString string
-		// sql date is wanting to return a string
-		err := rows.Scan(&transaction.Id, &transaction.Amount, &dateString)
-		if err != nil {
-			log.Fatal(err)
-		}
-		parsedDate, err := time.Parse("2006-01-02 15:04:05", dateString)
-		if err != nil {
-			log.Fatal("Failed to parse SQL string into a time object:", err)
-		}
-		transaction.Date = parsedDate
-		transactions = append(transactions, transaction)
-	}
-
-	return transactions
-}
 
 // This function will setup the database and create the tables if they don't exist
 func SetupDatabase() {
@@ -106,6 +65,7 @@ func createTables() {
 		id INT AUTO_INCREMENT,
 		name VARCHAR(255) NOT NULL,
 		amount FLOAT(16,2) NOT NULL,
+    	dateComplete DATE NOT NULL,
 		PRIMARY KEY(id));`)
 	if err != nil {
 		log.Fatal(err)

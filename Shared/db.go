@@ -1,9 +1,13 @@
 package shared
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
+	"time"
 )
+
+// TODO: store times in UTC time, then convert to show the user their local time
 
 func GetExpectedMonthlyIncome() float32 {
 	row := Database.QueryRow("SELECT estimatedIncome FROM Variables")
@@ -100,4 +104,75 @@ func UpdateTransaction(transaction Transaction) {
 	if err != nil {
 		log.Fatal("Failed to update the transaction: " + err.Error())
 	}
+}
+
+// This function will return all of the transactions in the Transactions table
+// if you supply the dBegin and dEnd with nil, it will return all transactions
+func GetAllTransactions(dBegin *time.Time, dEnd *time.Time) []Transaction {
+
+	var transactions []Transaction
+
+	format := "2006-01-02"
+	var rows *sql.Rows
+	var err error
+	if dBegin != nil && dEnd != nil {
+		rows, err = Database.Query(fmt.Sprintf("SELECT * FROM Transactions WHERE date BETWEEN ('%v', '%v') ORDER BY date", dBegin.Format(format), dEnd.Format(format)))
+	} else {
+		rows, err = Database.Query("SELECT * FROM Transactions ORDER BY date")
+	}
+	if err != nil {
+		log.Fatal("Querying all transactions last month failed: " + err.Error())
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+
+		var transaction Transaction
+		var dateString string
+		// sql date is wanting to return a string
+		err := rows.Scan(&transaction.Id, &transaction.Amount, &dateString)
+		if err != nil {
+			log.Fatal(err)
+		}
+		parsedDate, err := time.Parse("2006-01-02 15:04:05", dateString)
+		if err != nil {
+			log.Fatal("Failed to parse SQL string into a time object:", err)
+		}
+		transaction.Date = parsedDate
+		transactions = append(transactions, transaction)
+	}
+
+	return transactions
+}
+
+func AddGoal(goal Goal) {
+	_, err := Database.Exec("INSERT INTO Goals (name, amount, dateComplete) VALUES ('?', ?, '?');", goal.Name, goal.Amount, goal.DateComplete)
+	if err != nil {
+		log.Fatal("Error inserting goal in to the database:" + err.Error())
+	}
+}
+
+func GetAllGoals() []Goal {
+	var goals []Goal
+	rows, err := Database.Query("SELECT * FROM Goals;")
+	if err != nil {
+		log.Fatal("Querying all goals failed" + err.Error())
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var goal Goal
+		var dateString string
+		err = rows.Scan(&goal.Id, &goal.Name, &goal.Amount, &dateString)
+		if err != nil {
+			log.Fatal("Failed to scan goal into goal struct:" + err.Error())
+		}
+		parsedDate, err := time.Parse("2006-01-02 15:04:05", dateString)
+		if err != nil {
+			log.Fatal("Failed to parse SQL string into a time object:", err)
+		}
+		goal.DateComplete = parsedDate
+		goals = append(goals, goal)
+	}
+	return goals
 }
