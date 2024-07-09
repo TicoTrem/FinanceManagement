@@ -102,6 +102,15 @@ func createTables() {
 		log.Fatal(err)
 	}
 
+	_, err = Database.Exec(`CREATE TABLE IF NOT EXISTS Goals (
+		id INT AUTO_INCREMENT,
+		name VARCHAR(255) NOT NULL,
+		amount FLOAT(16,2) NOT NULL,
+		PRIMARY KEY(id));`)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	_, err = Database.Exec(`CREATE TABLE IF NOT EXISTS Variables (
 	spendingMoney FLOAT(16,2) DEFAULT 0.0,
 	estimatedSpendingMoney FLOAT(16,2) DEFAULT 0.0,

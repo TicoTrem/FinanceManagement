@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"strconv"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/ticotrem/finance/handlers"
@@ -45,7 +44,7 @@ func main() {
 		case "2":
 			handlers.HandleDisplayEditTransactions()
 		case "3":
-			handlers.HandleChangeExpectedValues()
+			handlers.HandleChangeExpectedIncome()
 		case "4":
 			handlers.HandleViewAndEditMonthlyExpenses()
 		case "5":
@@ -72,21 +71,4 @@ func calculateSpendingMoney() float32 {
 
 func printTransactions(transactions []shared.Transaction) {
 
-}
-
-func handleChangeExpectedValues() {
-	incomeString, exit := utils.GetUserResponse("What is your expected monthly income?")
-	if exit {
-		return
-	}
-	parsedIncome, err := strconv.ParseFloat(incomeString, 32)
-	if err != nil {
-		fmt.Println("Your change could not be made as the income could not be parsed")
-		return
-	}
-	income := float32(parsedIncome)
-
-	shared.SetExpectedMonthlyIncome(income)
-
-	fmt.Printf("Your expected monthly income has been set to %v. Estimations should be updated immediately!", income)
 }

@@ -35,7 +35,7 @@ func SetEstimatedSpendingMoney(estimatedSpendingMoney float32) {
 	}
 }
 
-// This function will return the expectedIncome variable from the Variables table
+// This function will return the spendingMoney variable from the Variables table
 func GetSpendingMoney() float32 {
 	row := Database.QueryRow("SELECT spendingMoney FROM Variables")
 	var spendingMoney float32

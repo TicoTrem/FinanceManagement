@@ -15,7 +15,7 @@ func HandleViewAndEditMonthlyExpenses() {
 	for i := 0; i < len(monthlyExpenses); i++ {
 		fmt.Printf("Monthly expense %v:\nName: %v\nAmount: %v\n", i+1, monthlyExpenses[i].Name, monthlyExpenses[i].Amount)
 	}
-	response, exit := utils.GetUserResponse("Enter the number of the expense you would like to edit, or 'C' to create a new one")
+	response, exit := utils.GetUserResponse("Enter the number of the expense you would like to edit, or 'c' to create a new one")
 	if exit {
 		return
 	}

@@ -39,7 +39,7 @@ func monthlyTask() {
 
 	expenses := shared.GetAllMonthlyExpensesStructs()
 	for i := 0; i < len(expenses); i++ {
-		shared.AddTransaction(expenses[i].Amount, time.Now().AddDate(0, 0, -1))
+		shared.AddTransaction(shared.Transaction{Amount: expenses[i].Amount, Date: time.Now().AddDate(0, 0, -1)})
 	}
 
 	netTransactionChange := calculateNetTransactionChange()
