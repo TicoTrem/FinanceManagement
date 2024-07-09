@@ -15,9 +15,9 @@ func GetUserResponse(prompt string, formatVariables ...any) (response string, ex
 		log.Fatal("Failed to parse user input" + err.Error())
 	}
 	if userResponse == "0" {
-		return response, true
+		return userResponse, true
 	}
-	return response, false
+	return userResponse, false
 }
 
 // the extra bool on top of GetUserResponse that this returns is meant to tell the

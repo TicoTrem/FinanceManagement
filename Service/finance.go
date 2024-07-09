@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"sync"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -10,9 +11,18 @@ import (
 
 func StartFinance() {
 
-	// create database if it doesn't already exist
+	shared.SetupDatabase()
+	defer shared.Database.Close()
 
+	if shared.GetEstimatedSpendingMoney() == 0 {
+		shared.SetEstimatedSpendingMoney(shared.GetExpectedMonthlyIncome() - shared.GetMonthlyExpenses())
+	}
+
+	var waitGroup sync.WaitGroup
+	waitGroup.Add(1)
 	go queueMonthlyTask()
+	waitGroup.Wait()
+
 }
 
 func queueMonthlyTask() {
@@ -39,7 +49,7 @@ func monthlyTask() {
 
 	expenses := shared.GetAllMonthlyExpensesStructs()
 	for i := 0; i < len(expenses); i++ {
-		shared.AddTransaction(shared.Transaction{Amount: expenses[i].Amount, Date: time.Now().AddDate(0, 0, -1)})
+		shared.AddTransaction(&shared.Transaction{Amount: expenses[i].Amount, Date: time.Now().AddDate(0, 0, -1)})
 	}
 
 	netTransactionChange := calculateNetTransactionChange()

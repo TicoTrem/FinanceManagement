@@ -21,8 +21,8 @@ func HandleChangeExpectedIncome() {
 			continue
 		}
 		income := float32(parsedFloat)
-		shared.SetExpectedMonthlyIncome(income)
-		fmt.Printf("Your expected monthly income has been set to %v. Estimations should be updated immediately!", income)
+		shared.SetEstimatedMonthlyIncome(income)
+		fmt.Printf("Your expected monthly income has been set to %v. Estimations should be updated immediately!\n", income)
 		break
 	}
 }
@@ -77,6 +77,6 @@ func HandleAddNewGoal() {
 		}
 		break
 	}
-	shared.AddGoal(goal)
+	shared.AddGoal(&goal)
 
 }

@@ -29,7 +29,6 @@ func SetupDatabase() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer Database.Close()
 
 	createTables()
 
@@ -74,7 +73,7 @@ func createTables() {
 	_, err = Database.Exec(`CREATE TABLE IF NOT EXISTS Variables (
 	spendingMoney FLOAT(16,2) DEFAULT 0.0,
 	estimatedSpendingMoney FLOAT(16,2) DEFAULT 0.0,
-	estimatedIncome FLOAT(16,2) DEFAULT 0.0;`)
+	estimatedIncome FLOAT(16,2) DEFAULT 0.0);`)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -15,10 +15,10 @@ func GetExpectedMonthlyIncome() float32 {
 	row.Scan(&estimatedIncome)
 	return estimatedIncome
 }
-func SetExpectedMonthlyIncome(expectedMonthlyIncome float32) {
-	_, err := Database.Exec("UPDATE Variables SET expectedMonthlyIncome = ?", expectedMonthlyIncome)
+func SetEstimatedMonthlyIncome(estimatedMonthlyIncome float32) {
+	_, err := Database.Exec("UPDATE Variables SET estimatedIncome = ?", estimatedMonthlyIncome)
 	if err != nil {
-		log.Fatal("Failed to update the expectedMonthlyIncome variable: " + err.Error())
+		log.Fatal("Failed to update the estimatedMonthlyIncome variable: " + err.Error())
 	}
 }
 
@@ -50,10 +50,11 @@ func GetSpendingMoney() float32 {
 	return spendingMoney
 }
 func SetSpendingMoney(spendingMoney float32) {
-	_, err := Database.Exec("UPDATE Variables SET spendingMoney = ?", spendingMoney)
-	if err != nil {
-		log.Fatal(err)
-	}
+	//_, err := Database.Exec("UPDATE Variables SET spendingMoney = ?", spendingMoney)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+
 }
 
 func AddMonthlyExpense(expense MonthlyExpense) {
@@ -89,7 +90,7 @@ func GetAllMonthlyExpensesStructs() []MonthlyExpense {
 	return monthlyExpenses
 }
 
-func AddTransaction(transaction Transaction) {
+func AddTransaction(transaction *Transaction) {
 	_, err := Database.Exec("INSERT INTO Transactions (amount, date) VALUES (?, ?);", transaction.Amount, transaction.Date)
 	if err != nil {
 		log.Fatal("Error inserting transaction in to the database" + err.Error())
@@ -97,9 +98,17 @@ func AddTransaction(transaction Transaction) {
 	fmt.Println("Your transaction has successfully been added to the database!")
 }
 
+func DeleteTransaction(transaction *Transaction) {
+	_, err := Database.Exec("DELETE FROM Transactions WHERE id = ?;", transaction.Id)
+	if err != nil {
+		log.Fatal("Error deleting transaction in the database" + err.Error())
+	}
+	fmt.Println("Your transaction has successfully been deleted from the database!")
+}
+
 // updates the given transaction object in the mysql database. It uses the id in the transaction struct
 // to update the correct record, updating the Transaction struct does not update the database
-func UpdateTransaction(transaction Transaction) {
+func UpdateTransaction(transaction *Transaction) {
 	_, err := Database.Exec("UPDATE Transactions SET amount = ? WHERE id = ?", transaction.Amount, transaction.Id)
 	if err != nil {
 		log.Fatal("Failed to update the transaction: " + err.Error())
@@ -146,7 +155,7 @@ func GetAllTransactions(dBegin *time.Time, dEnd *time.Time) []Transaction {
 	return transactions
 }
 
-func AddGoal(goal Goal) {
+func AddGoal(goal *Goal) {
 	_, err := Database.Exec("INSERT INTO Goals (name, amount, dateComplete) VALUES ('?', ?, '?');", goal.Name, goal.Amount, goal.DateComplete)
 	if err != nil {
 		log.Fatal("Error inserting goal in to the database:" + err.Error())

@@ -1,10 +1,7 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
-	"log"
-
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/ticotrem/finance/handlers"
 	"github.com/ticotrem/finance/shared"
@@ -16,14 +13,9 @@ import (
 
 func main() {
 
-	db, err := sql.Open("mysql", "root:password@/Finance")
-	shared.Database = db
-	// You started the application before ever running the service
+	shared.SetupDatabase()
 
-	// how can I make sure the service is currently running?
-	if err != nil {
-		log.Fatal(err)
-	}
+	// TODO: how can I make sure the service is currently running?
 
 	for {
 		// TODO: When you edit or delete a transaction, make it so it updates everything properly
@@ -34,7 +26,7 @@ func main() {
 				2) Display and edit all transactions
 				3) Change 'Expected' values
 				4) View and edit monthly expenses
-				5) Add a new goal to save up for`, fmt.Sprint(shared.GetSpendingMoney()))
+				5) Add a new goal to save up for`, fmt.Sprint(shared.GetEstimatedSpendingMoney()))
 		if exit {
 			return
 		}

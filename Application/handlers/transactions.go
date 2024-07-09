@@ -22,7 +22,7 @@ func HandleAddTransaction() {
 			continue
 		}
 
-		shared.AddTransaction(shared.Transaction{Amount: amount, Date: time.Now()})
+		shared.AddTransaction(&shared.Transaction{Amount: amount, Date: time.Now()})
 		// if the transaction is positive, we just need to add it to the database as above.
 		// if it is negative, we will lower the estimated spending money accordingly
 		if amount < 0 {
@@ -39,7 +39,7 @@ func HandleDisplayEditTransactions() {
 	var selectedTransaction shared.Transaction
 	var parsedInt int
 	for i := 0; i < len(transactions); i++ {
-		fmt.Printf("Transaction %v:\tAmount: %v\t Date: %v\t", i+1, transactions[i].Amount, transactions[i].Date)
+		fmt.Printf("Transaction %v:\tAmount: %v\t Date: %v\n", i+1, transactions[i].Amount, transactions[i].Date)
 	}
 	for {
 		response, exit := utils.GetUserResponse("If you would like to edit or delete one of these transactions, please enter the number of the transaction")
@@ -64,13 +64,12 @@ func HandleDisplayEditTransactions() {
 		case "1":
 			handleEditTransaction(selectedTransaction)
 		case "2":
-			handleDeleteTransaction(selectedTransaction)
-		case "3":
-			return
+			shared.DeleteTransaction(&selectedTransaction)
 		default:
 			fmt.Println("Invalid input")
 			continue
 		}
+		break
 	}
 
 }
@@ -87,7 +86,7 @@ func handleEditTransaction(selectedTransaction shared.Transaction) {
 			continue
 		}
 		selectedTransaction.Amount = float32(parsedFloat)
-		shared.UpdateTransaction(selectedTransaction)
+		shared.UpdateTransaction(&selectedTransaction)
 		break
 	}
 }
