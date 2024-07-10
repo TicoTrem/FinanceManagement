@@ -58,7 +58,7 @@ func SetSpendingMoney(spendingMoney float32) {
 }
 
 func AddMonthlyExpense(expense MonthlyExpense) {
-	_, err := Database.Exec("INSERT INTO MonthlyExpenses (name, amount) VALUES (?, ?);")
+	_, err := Database.Exec(fmt.Sprintf("INSERT INTO MonthlyExpenses (name, amount) VALUES ('%v', %v);", expense.Name, expense.Amount))
 	if err != nil {
 		log.Fatal("Error inserting expense in to the database" + err.Error())
 	}
@@ -72,14 +72,13 @@ func GetAllMonthlyExpensesStructs() []MonthlyExpense {
 	defer rows.Close()
 
 	var monthlyExpenses []MonthlyExpense
-	var id int
 
 	for rows.Next() {
 
 		var monthlyExpense MonthlyExpense
 
 		// sql date is wanting to return a string
-		err := rows.Scan(&id, &monthlyExpense.Name, &monthlyExpense.Amount)
+		err := rows.Scan(&monthlyExpense.Id, &monthlyExpense.Name, &monthlyExpense.Amount)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -109,7 +108,7 @@ func DeleteTransaction(transaction *Transaction) {
 // updates the given transaction object in the mysql database. It uses the id in the transaction struct
 // to update the correct record, updating the Transaction struct does not update the database
 func UpdateTransaction(transaction *Transaction) {
-	_, err := Database.Exec("UPDATE Transactions SET amount = ? WHERE id = ?", transaction.Amount, transaction.Id)
+	_, err := Database.Exec("UPDATE Transactions SET amount = ? WHERE id = ?;", transaction.Amount, transaction.Id)
 	if err != nil {
 		log.Fatal("Failed to update the transaction: " + err.Error())
 	}
@@ -156,7 +155,7 @@ func GetAllTransactions(dBegin *time.Time, dEnd *time.Time) []Transaction {
 }
 
 func AddGoal(goal *Goal) {
-	_, err := Database.Exec("INSERT INTO Goals (name, amount, dateComplete) VALUES ('?', ?, '?');", goal.Name, goal.Amount, goal.DateComplete)
+	_, err := Database.Exec("INSERT INTO Goals (name, amount, amountSaved, dateComplete) VALUES ('?', ?, ?, '?');", goal.Name, goal.Amount, goal.AmountSaved, goal.DateComplete)
 	if err != nil {
 		log.Fatal("Error inserting goal in to the database:" + err.Error())
 	}
@@ -181,7 +180,43 @@ func GetAllGoals() []Goal {
 			log.Fatal("Failed to parse SQL string into a time object:", err)
 		}
 		goal.DateComplete = parsedDate
+		// calculate and assign the amount per month attribute
+		months := getMonthsToComplete(&goal)
+		goal.AmountPerMonth = goal.Amount / float32(months)
 		goals = append(goals, goal)
 	}
 	return goals
+}
+
+func getMonthsToComplete(goal *Goal) int {
+	months := (time.Now().Year() - goal.DateComplete.Year()) * 12
+	months += int(time.Now().Month() - goal.DateComplete.Month())
+	return months
+
+}
+
+func (goal *Goal) UpdateGoal() {
+	_, err := Database.Exec("UPDATE Goals SET amountSaved = ? WHERE id = ?;", goal.Id, goal.AmountPerMonth)
+	if err != nil {
+		log.Fatal("Error updating goal in database: " + err.Error())
+	}
+}
+
+func GetEmergencyData() (max float32, amount float32) {
+	row := Database.QueryRow("SELECT emergencyMax, emergencyAmount FROM Variables")
+	var emergencyMax float32
+	var emergencyAmount float32
+	err := row.Scan(&emergencyMax, &emergencyAmount)
+	if err != nil {
+		log.Fatal("Failed to scan emergency values into variables:" + err.Error())
+	}
+	return emergencyAmount, emergencyMax
+}
+
+func IncreaseEmergencyAmount(amount float32) {
+	emergencyAmount, _ := GetEmergencyData()
+	_, err := Database.Exec("UPDATE Variables SET emergencyAmount = ?;", emergencyAmount+amount)
+	if err != nil {
+		log.Fatal("Error updating emergency values into variables table:" + err.Error())
+	}
 }

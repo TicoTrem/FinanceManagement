@@ -47,14 +47,33 @@ func monthlyTask() {
 	// TODO: make sure the estimated spending money is updated when the user alters a monthly expense value, it is assumed to be active THAT MONTH
 	// so it must be updated.
 
+	// add expenses as transactions
 	expenses := shared.GetAllMonthlyExpensesStructs()
 	for i := 0; i < len(expenses); i++ {
 		shared.AddTransaction(&shared.Transaction{Amount: expenses[i].Amount, Date: time.Now().AddDate(0, 0, -1)})
 	}
 
+	// add goals as transactions
+	goals := shared.GetAllGoals()
+	for i := 0; i < len(goals); i++ {
+		shared.AddTransaction(&shared.Transaction{Amount: goals[i].AmountPerMonth, Date: time.Now()})
+		goals[i].UpdateGoal()
+	}
+
+	// the above 2 are in the transactions so we can now calculate how much
+	// our money went up or down this month in total (no estimated values)
 	netTransactionChange := calculateNetTransactionChange()
 
 	spendingMoney := shared.GetSpendingMoney() + netTransactionChange
+
+	// The emergency fund takes half of the netTransaction change if it is positive.
+	emergencyAmount, emergencyMax := shared.GetEmergencyData()
+	if emergencyAmount < emergencyMax && netTransactionChange > 0 {
+		netTransactionChange /= 2
+		shared.IncreaseEmergencyAmount(netTransactionChange)
+	}
+
+	// update it for last month, we later updated EstimatedSpendingMoney for THIS month.
 	shared.SetSpendingMoney(spendingMoney)
 
 	// Set the estimated spending money value to the spending money, with next months predicted outcome

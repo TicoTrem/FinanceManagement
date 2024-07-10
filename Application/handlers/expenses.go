@@ -13,7 +13,7 @@ import (
 func HandleViewAndEditMonthlyExpenses() {
 	monthlyExpenses := shared.GetAllMonthlyExpensesStructs()
 	for i := 0; i < len(monthlyExpenses); i++ {
-		fmt.Printf("Monthly expense %v:\nName: %v\nAmount: %v\n", i+1, monthlyExpenses[i].Name, monthlyExpenses[i].Amount)
+		fmt.Printf("%v:\tName: %v\tAmount: %v\n", i+1, monthlyExpenses[i].Name, monthlyExpenses[i].Amount)
 	}
 	response, exit := utils.GetUserResponse("Enter the number of the expense you would like to edit, or 'c' to create a new one")
 	if exit {
@@ -61,7 +61,7 @@ func editMonthlyExpense(response string, monthlyExpenses []shared.MonthlyExpense
 			if exit {
 				return
 			}
-			_, err := shared.Database.Exec("UPDATE MonthlyExpense SET name = ? WHERE id = ?", response, selectedExpense.Id)
+			_, err := shared.Database.Exec("UPDATE MonthlyExpenses SET name = ? WHERE id = ?;", response, selectedExpense.Id)
 			if err != nil {
 				log.Fatal("Failed to update the expense name: " + err.Error())
 			}
@@ -78,7 +78,7 @@ func editMonthlyExpense(response string, monthlyExpenses []shared.MonthlyExpense
 			}
 			oldAmount := selectedExpense.Amount
 			newAmount := float32(float64bit)
-			_, err = shared.Database.Exec("UPDATE MonthlyExpense SET amount = ? WHERE id = ?", newAmount, selectedExpense.Id)
+			_, err = shared.Database.Exec("UPDATE MonthlyExpenses SET amount = ? WHERE id = ?", newAmount, selectedExpense.Id)
 			if err != nil {
 				log.Fatal("Failed update database expense amount: " + err.Error())
 			}
@@ -86,7 +86,7 @@ func editMonthlyExpense(response string, monthlyExpenses []shared.MonthlyExpense
 			// updated the estimated spending money
 			shared.SetEstimatedSpendingMoney(shared.GetEstimatedSpendingMoney() + amountChanged)
 		case "3":
-
+			//TODO:
 		default:
 			fmt.Println("Invalid input")
 			continue

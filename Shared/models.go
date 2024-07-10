@@ -18,6 +18,7 @@ type Goal struct {
 	Id             int
 	Name           string
 	Amount         float32
+	AmountSaved    float32
 	AmountPerMonth float32
 	DateComplete   time.Time
 }

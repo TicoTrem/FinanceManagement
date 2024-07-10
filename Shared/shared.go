@@ -64,6 +64,7 @@ func createTables() {
 		id INT AUTO_INCREMENT,
 		name VARCHAR(255) NOT NULL,
 		amount FLOAT(16,2) NOT NULL,
+    	amountSaved float(16,2) NOT NULL,
     	dateComplete DATE NOT NULL,
 		PRIMARY KEY(id));`)
 	if err != nil {
@@ -73,7 +74,9 @@ func createTables() {
 	_, err = Database.Exec(`CREATE TABLE IF NOT EXISTS Variables (
 	spendingMoney FLOAT(16,2) DEFAULT 0.0,
 	estimatedSpendingMoney FLOAT(16,2) DEFAULT 0.0,
-	estimatedIncome FLOAT(16,2) DEFAULT 0.0);`)
+	estimatedIncome FLOAT(16,2) DEFAULT 0.0,
+    emergencyMax float(16,2) DEFAULT 0.0,
+    emergencyAmount float(16,2) DEFAULT 0.0);`)
 	if err != nil {
 		log.Fatal(err)
 	}
