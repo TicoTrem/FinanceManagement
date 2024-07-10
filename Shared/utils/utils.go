@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strconv"
+	"strings"
 )
 
 // the bool is to determine if the user wants to exit that menu
@@ -43,5 +44,22 @@ func GetUserResponseInt(prompt string, formatVariables ...any) (parsedInt int, e
 			continue
 		}
 		return pInt, exit
+	}
+}
+
+func CreateNewOrInt(prompt string, minimum int, maximum int, formatVariables ...any) (response int, createNew bool, exit bool) {
+	for {
+		response, exit := GetUserResponse("Enter the number of the goal you would like to manage, or 'c' to create a new one")
+		lowercase := strings.ToLower(response)
+		if lowercase == "c" {
+			return -1, true, exit
+		} else {
+			parsedInt, err := strconv.Atoi(response)
+			if err != nil || parsedInt < minimum || parsedInt > maximum {
+				fmt.Println("Invalid input")
+				continue
+			}
+			return parsedInt, false, exit
+		}
 	}
 }

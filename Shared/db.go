@@ -161,7 +161,7 @@ func AddGoal(goal *Goal) {
 	}
 }
 
-func GetAllGoals() []Goal {
+func GetAllGoalStructs() []Goal {
 	var goals []Goal
 	rows, err := Database.Query("SELECT * FROM Goals;")
 	if err != nil {
@@ -182,7 +182,7 @@ func GetAllGoals() []Goal {
 		goal.DateComplete = parsedDate
 		// calculate and assign the amount per month attribute
 		months := getMonthsToComplete(&goal)
-		goal.AmountPerMonth = goal.Amount / float32(months)
+		goal.AmountPerMonth = (goal.Amount - goal.AmountSaved) / float32(months)
 		goals = append(goals, goal)
 	}
 	return goals
@@ -192,13 +192,20 @@ func getMonthsToComplete(goal *Goal) int {
 	months := (time.Now().Year() - goal.DateComplete.Year()) * 12
 	months += int(time.Now().Month() - goal.DateComplete.Month())
 	return months
-
 }
 
 func (goal *Goal) UpdateGoal() {
-	_, err := Database.Exec("UPDATE Goals SET amountSaved = ? WHERE id = ?;", goal.Id, goal.AmountPerMonth)
+
+	_, err := Database.Exec("UPDATE Goals SET amountSaved = ? WHERE id = ?;", goal.AmountSaved+goal.AmountPerMonth, goal.Id)
 	if err != nil {
 		log.Fatal("Error updating goal in database: " + err.Error())
+	}
+}
+
+func (goal *Goal) DeleteGoal() {
+	_, err := Database.Exec("DELETE FROM Goals WHERE id = ?;", goal.Id)
+	if err != nil {
+		log.Fatal("Error deleting goal from the database" + err.Error())
 	}
 }
 

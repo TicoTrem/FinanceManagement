@@ -28,7 +28,7 @@ func main() {
 				2) Display and edit all transactions
 				3) Change 'Expected' values
 				4) View and edit monthly expenses
-				5) Add a new goal to save up for
+				5) View and edit goals
 				6) Manage your emergency fund`, fmt.Sprint(shared.GetEstimatedSpendingMoney()), emergencyAmount)
 		if exit {
 			return
@@ -43,7 +43,7 @@ func main() {
 		case "4":
 			handlers.HandleViewAndEditMonthlyExpenses()
 		case "5":
-			handlers.HandleAddNewGoal()
+			handlers.HandleViewAndEditGoal()
 		case "6":
 			handlers.HandleEmergencyFund()
 		default:

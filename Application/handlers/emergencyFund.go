@@ -25,15 +25,13 @@ func HandleEmergencyFund() {
 	}
 	switch response {
 	case "1":
-		//// this money should not
-		//response, exit := utils.GetUserResponseFloat(`How much would you like to spend? (Note this will not change spending money)`)
-		//if exit {
-		//	return
-		//}
+		response, exit := utils.GetUserResponseFloat(`How much would you like to spend? (Note this will not change spending money)`)
+		if exit {
+			return
+		}
 		return
 	}
 
-	// take half of the monthly spending money until the emergency fund meets this
 }
 
 //func spendEmergencyFund
