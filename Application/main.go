@@ -26,10 +26,12 @@ func main() {
 		What would you like to do?
 				1) Add a transaction
 				2) Display and edit all transactions
-				3) Change 'Expected' values
-				4) View and edit monthly expenses
+				3) View and edit monthly expenses
+				4) Change expected monthly income
 				5) View and edit goals
-				6) Manage your emergency fund`, fmt.Sprint(shared.GetEstimatedSpendingMoney()), emergencyAmount)
+				6) Manage your emergency fund
+				7) Pass a month by for testing`, fmt.Sprint(shared.GetEstimatedSpendingMoney()), emergencyAmount)
+
 		if exit {
 			return
 		}
@@ -39,13 +41,17 @@ func main() {
 		case "2":
 			handlers.HandleDisplayEditTransactions()
 		case "3":
-			handlers.HandleChangeExpectedIncome()
-		case "4":
 			handlers.HandleViewAndEditMonthlyExpenses()
+		case "4":
+			handlers.HandleChangeExpectedIncome()
 		case "5":
 			handlers.HandleViewAndEditGoal()
 		case "6":
 			handlers.HandleEmergencyFund()
+		case "7":
+			//pass a month for testing
+			shared.MonthlyTask()
+
 		default:
 			fmt.Println("Invalid input")
 			continue

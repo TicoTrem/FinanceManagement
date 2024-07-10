@@ -3,9 +3,10 @@ package shared
 import "time"
 
 type Transaction struct {
-	Id     int
-	Amount float32
-	Date   time.Time
+	Id          int
+	Amount      float32
+	Date        time.Time
+	Description string
 }
 
 type MonthlyExpense struct {

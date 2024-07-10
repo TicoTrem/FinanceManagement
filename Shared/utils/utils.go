@@ -1,8 +1,10 @@
 package utils
 
 import (
+	"bufio"
 	"fmt"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -10,10 +12,13 @@ import (
 // the bool is to determine if the user wants to exit that menu
 func GetUserResponse(prompt string, formatVariables ...any) (response string, exit bool) {
 	fmt.Printf(prompt+"\n", formatVariables...)
-	var userResponse string
-	_, err := fmt.Scanln(&userResponse)
+	reader := bufio.NewReader(os.Stdin)
+	userResponse, err := reader.ReadString('\n')
+	userResponse = strings.TrimSpace(userResponse)
+
 	if err != nil {
-		log.Fatal("Failed to parse user input" + err.Error())
+		log.Fatal("Error reading input:", err)
+		return
 	}
 	if userResponse == "0" {
 		return userResponse, true
@@ -49,14 +54,17 @@ func GetUserResponseInt(prompt string, formatVariables ...any) (parsedInt int, e
 
 func CreateNewOrInt(prompt string, minimum int, maximum int, formatVariables ...any) (response int, createNew bool, exit bool) {
 	for {
-		response, exit := GetUserResponse("Enter the number of the goal you would like to manage, or 'c' to create a new one")
+		response, exit := GetUserResponse(prompt, formatVariables...)
+		if exit {
+			return -1, false, true
+		}
 		lowercase := strings.ToLower(response)
 		if lowercase == "c" {
 			return -1, true, exit
 		} else {
 			parsedInt, err := strconv.Atoi(response)
 			if err != nil || parsedInt < minimum || parsedInt > maximum {
-				fmt.Println("Invalid input")
+				fmt.Println("Invalid Input")
 				continue
 			}
 			return parsedInt, false, exit

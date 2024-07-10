@@ -12,11 +12,11 @@ var monthlyPaymentWhenUnder float32
 func HandleEmergencyFund() {
 
 	// emergency fund should cover 6 months of your expenses (also can be used for random surprise payments
-	maxAmount = shared.GetMonthlyExpenses() * 6
+
 	emergencyAmount, emergencyMax := shared.GetEmergencyData()
 	fmt.Printf("Welcome to to your emergency fund.\nCurrent fund is $%v/$%v\n"+
-		"If your emergency fund is not full, half your new monthly spending money will"+
-		" go towards it until filled.\n", emergencyMax, emergencyAmount)
+		"If your emergency fund is not full, half your new monthly spending money will "+
+		"go towards it until filled.\n", emergencyMax, emergencyAmount)
 
 	response, exit := utils.GetUserResponse(`What would you like to do?
 			1) Spend Emergency Fund`)
@@ -25,13 +25,16 @@ func HandleEmergencyFund() {
 	}
 	switch response {
 	case "1":
+		// It is not a transaction record to spend the emergency fund,
+		// it is a transaction to fill it
 		response, exit := utils.GetUserResponseFloat(`How much would you like to spend? (Note this will not change spending money)`)
 		if exit {
 			return
 		}
-		return
+		enough := shared.SpendEmergencyFund(response)
+		if !enough {
+			fmt.Println("There is not enough money in your emergency fund. I hope you have savings!")
+		}
 	}
 
 }
-
-//func spendEmergencyFund

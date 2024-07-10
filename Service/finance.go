@@ -1,7 +1,7 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"sync"
 	"time"
 
@@ -21,6 +21,7 @@ func StartFinance() {
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(1)
 	go queueMonthlyTask()
+	fmt.Println("Service Running")
 	waitGroup.Wait()
 
 }
@@ -36,75 +37,6 @@ func queueMonthlyTask() {
 
 		// blocks execution until the timer expires (the start of the month)
 		<-timer.C
-		monthlyTask()
+		MonthlyTask()
 	}
-}
-
-func monthlyTask() {
-
-	// add the monthly transactions for that month and set the date as the last day of the previous month
-	// this is so you can make changes to the prices of the monthly expenses and have it reflected in that months transactions
-	// TODO: make sure the estimated spending money is updated when the user alters a monthly expense value, it is assumed to be active THAT MONTH
-	// so it must be updated.
-
-	// add expenses as transactions
-	expenses := shared.GetAllMonthlyExpensesStructs()
-	for i := 0; i < len(expenses); i++ {
-		shared.AddTransaction(&shared.Transaction{Amount: expenses[i].Amount, Date: time.Now().AddDate(0, 0, -1)})
-	}
-
-	// add goals as transactions
-	goals := shared.GetAllGoals()
-	for i := 0; i < len(goals); i++ {
-		shared.AddTransaction(&shared.Transaction{Amount: goals[i].AmountPerMonth, Date: time.Now()})
-		goals[i].UpdateGoal()
-	}
-
-	// the above 2 are in the transactions so we can now calculate how much
-	// our money went up or down this month in total (no estimated values)
-	netTransactionChange := calculateNetTransactionChange()
-
-	spendingMoney := shared.GetSpendingMoney() + netTransactionChange
-
-	// The emergency fund takes half of the netTransaction change if it is positive.
-	emergencyAmount, emergencyMax := shared.GetEmergencyData()
-	if emergencyAmount < emergencyMax && netTransactionChange > 0 {
-		netTransactionChange /= 2
-		shared.IncreaseEmergencyAmount(netTransactionChange)
-	}
-
-	// update it for last month, we later updated EstimatedSpendingMoney for THIS month.
-	shared.SetSpendingMoney(spendingMoney)
-
-	// Set the estimated spending money value to the spending money, with next months predicted outcome
-	// and deducting the set in stone monthly expenses. The expenses should be automatically registered as transactions because
-	// otherwise you would not be able to lower the spending money when you make purchases
-	shared.SetEstimatedSpendingMoney(spendingMoney + shared.GetExpectedMonthlyIncome() - shared.GetMonthlyExpenses())
-
-}
-
-// This will calculate the net transaction change (which includes income and expenses)
-// Then this will change estimated spending money to this value
-func calculateNetTransactionChange() float32 {
-
-	// get the first of last month
-	today := time.Now()
-	if today.Day() != 1 {
-		log.Fatal("The monthly task was ran on a day other than the 1st. Please fix this!")
-	}
-
-	firstOfLastMonth := today.AddDate(0, -1, 0)
-
-	// this will add a month, the subtract the amount of days, which takes us to the last day of the month
-	lastOfLastMonth := firstOfLastMonth.AddDate(0, 1, -firstOfLastMonth.Day())
-
-	var netTransactionChange float32 = 0.0
-
-	lastMonthTransactions := shared.GetAllTransactions(&firstOfLastMonth, &lastOfLastMonth)
-
-	for i := 0; i < len(lastMonthTransactions); i++ {
-		netTransactionChange += lastMonthTransactions[i].Amount
-	}
-
-	return netTransactionChange
 }

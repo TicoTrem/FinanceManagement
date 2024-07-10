@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 	"time"
 
@@ -44,10 +43,7 @@ func editMonthlyExpense(monthlyExpense shared.MonthlyExpense) {
 			if exit {
 				return
 			}
-			_, err := shared.Database.Exec("UPDATE MonthlyExpenses SET name = ? WHERE id = ?;", response, monthlyExpense.Id)
-			if err != nil {
-				log.Fatal("Failed to update the expense name: " + err.Error())
-			}
+			monthlyExpense.UpdateExpenseName(response)
 			fmt.Println("The expense name has been updated to " + response)
 		case "2":
 			newMonthlyResponse, exit := utils.GetUserResponse("Please enter the new monthly amount for this expense: ")
@@ -61,15 +57,28 @@ func editMonthlyExpense(monthlyExpense shared.MonthlyExpense) {
 			}
 			oldAmount := monthlyExpense.Amount
 			newAmount := float32(float64bit)
-			_, err = shared.Database.Exec("UPDATE MonthlyExpenses SET amount = ? WHERE id = ?", newAmount, monthlyExpense.Id)
-			if err != nil {
-				log.Fatal("Failed update database expense amount: " + err.Error())
-			}
+			monthlyExpense.UpdateExpenseAmount(newAmount)
 			amountChanged := newAmount - oldAmount
 			// updated the estimated spending money
 			shared.SetEstimatedSpendingMoney(shared.GetEstimatedSpendingMoney() + amountChanged)
 		case "3":
-			//TODO:
+			for {
+				response, exit := utils.GetUserResponse("Was the payment made already this month?\n1) Yes\n2) No")
+				if exit {
+					return
+				}
+				if response == "2" {
+					shared.SetEstimatedSpendingMoney(shared.GetEstimatedSpendingMoney() + monthlyExpense.Amount)
+					fmt.Printf("The %v monthly expense has been deleted and $%v has been added to your estimated spending money!\n", monthlyExpense.Name, monthlyExpense.Amount)
+				} else if response == "1" {
+					fmt.Printf("The %v monthly expense has been deleted!\n", monthlyExpense.Name)
+				} else {
+					fmt.Println("Invalid response")
+					continue
+				}
+				break
+			}
+			monthlyExpense.Delete()
 		default:
 			fmt.Println("Invalid input")
 			continue
@@ -110,9 +119,9 @@ func handleAddNewMonthlyExpense() {
 func HandleViewAndEditGoal() {
 	monthlyGoals := shared.GetAllGoalStructs()
 	for i := 0; i < len(monthlyGoals); i++ {
-		fmt.Printf("%v:\tName: %v\tAmount: %v/%v\tAmount Per Month: %v\n", i+1, monthlyGoals[i].Name, monthlyGoals[i].AmountSaved, monthlyGoals[i].Amount, monthlyGoals[i].AmountPerMonth)
+		fmt.Printf("%v:\tName: %v\tAmount: %v/%v\tAmount per month: $%.2f\tMonths left: %v\n", i+1, monthlyGoals[i].Name, monthlyGoals[i].AmountSaved, monthlyGoals[i].Amount, monthlyGoals[i].AmountPerMonth, monthlyGoals[i].GetMonthsToComplete())
 	}
-	response, createNew, exit := utils.CreateNewOrInt("Enter the number of the goal you would like to edit, or 'c' to create a new one", 1, len(monthlyGoals))
+	response, createNew, exit := utils.CreateNewOrInt("Enter the number of the goal you would like to manage, or 'c' to create a new one", 1, len(monthlyGoals))
 	if exit {
 		return
 	} else if createNew {
@@ -151,31 +160,42 @@ func handleAddNewGoal() {
 				if exit {
 					return
 				}
+				goal.PopulateDateComplete()
 			}
 		case "2":
-			for {
-				yearInt, exit := utils.GetUserResponseInt("What year would you like the goal to be met by?")
-				if exit {
-					return
-				}
-				monthInt, exit := utils.GetUserResponseInt("What month would you like the goal to be met by?")
-				if exit {
-					return
-				}
-				dayInt, exit := utils.GetUserResponseInt("What day would you like the goal to be met by?")
-				if exit {
-					return
-				}
-				goal.DateComplete = time.Date(yearInt, time.Month(monthInt), dayInt, 0, 0, 0, 0, time.Local)
-				shared.
+			goal.DateComplete, exit = getDateFromUser()
+			if exit {
+				return
 			}
+			goal.PopulateAmountPerMonth()
 		default:
 			fmt.Println("Invalid Input")
 		}
 		break
 	}
 	shared.AddGoal(&goal)
+	fmt.Printf("Your goal was successfully created, you will save $%v per month for %v months", goal.AmountPerMonth, goal.GetMonthsToComplete())
 
+}
+
+func getDateFromUser() (date time.Time, exit bool) {
+	returnTime := time.Time{}
+	for {
+		yearInt, exit := utils.GetUserResponseInt("What year would you like the goal to be met by?")
+		if exit {
+			return returnTime, true
+		}
+		monthInt, exit := utils.GetUserResponseInt("What month would you like the goal to be met by?")
+		if exit {
+			return returnTime, true
+		}
+		dayInt, exit := utils.GetUserResponseInt("What day would you like the goal to be met by?")
+		if exit {
+			return returnTime, true
+		}
+		returnTime = time.Date(yearInt, time.Month(monthInt), dayInt, 0, 0, 0, 0, time.Local)
+		return returnTime, false
+	}
 }
 
 func manageGoal(goal shared.Goal) {
@@ -196,10 +216,66 @@ func manageGoal(goal shared.Goal) {
 	}
 }
 
-
 func editGoal(goal shared.Goal) {
 	response, exit := utils.GetUserResponse(`Would you like to edit:
 												1) Goal name
-												2) Goal completion date
-												3) Amount per month towards the goal)
+												2) Goal amount
+												3) Goal completion date
+												4) Amount per month towards the goal`)
+	if exit {
+		return
+	}
+	switch response {
+	case "1":
+		response, exit := utils.GetUserResponse("What would you like the goals new name to be?")
+		if exit {
+			return
+		}
+		goal.UpdateGoalName(response)
+	case "2":
+		var changeMonthlyPayments bool
+		response, exit := utils.GetUserResponseFloat("What would you like the new goal amount to be?")
+		if exit {
+			return
+		}
+		for {
+			methodResponse, exit := utils.GetUserResponse("Do you want to:\n1) Automatically change the date of goal completion\n2) Automatically change the monthly payment")
+			if exit {
+				return
+			}
+			if methodResponse == "1" {
+				changeMonthlyPayments = false
+			} else if methodResponse == "2" {
+				changeMonthlyPayments = true
+			} else {
+				fmt.Println("Invalid Input")
+				continue
+			}
+			break
+		}
+		goal.UpdateGoalAmount(response, changeMonthlyPayments)
+		fmt.Printf("Successfully updated goal.\nMontly payments: $%v\nMonthly payments left: %v", goal.AmountPerMonth, goal.GetMonthsToComplete())
+	case "3":
+		date, exit := getDateFromUser()
+		if exit {
+			return
+		}
+		goal.UpdateGoalDate(date)
+	case "4":
+		response, exit := utils.GetUserResponseFloat("What would you like the new monthly payment to be?")
+		if exit {
+			return
+		}
+		goal.UpdateGoalMonthly(response)
+		fmt.Printf("Your goal is now set to be completed in %v months\n", goal.GetMonthsToComplete())
+
+	}
+}
+
+func contributeToGoal(goal shared.Goal) {
+	response, exit := utils.GetUserResponseFloat("How much would you like to contribute to the goal? (This will be deducted from your spending money)")
+	if exit {
+		return
+	}
+	goal.Contribute(response)
 }
