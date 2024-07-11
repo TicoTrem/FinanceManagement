@@ -12,7 +12,7 @@ import (
 func StartFinance() {
 
 	shared.SetupDatabase()
-	defer shared.Database.Close()
+	defer db.Database.Close()
 
 	if shared.GetEstimatedSpendingMoney() == 0 {
 		shared.SetEstimatedSpendingMoney(shared.GetExpectedMonthlyIncome() - shared.GetMonthlyExpenses())

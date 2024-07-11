@@ -5,6 +5,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/ticotrem/finance/handlers"
 	"github.com/ticotrem/finance/shared"
+	"github.com/ticotrem/finance/shared/db"
 	"github.com/ticotrem/finance/shared/utils"
 )
 
@@ -16,21 +17,23 @@ func main() {
 	shared.SetupDatabase()
 
 	// TODO: how can I make sure the service is currently running?
-	_, emergencyAmount := shared.GetEmergencyData()
+	_, emergencyAmount := db.GetEmergencyData()
 
 	for {
 		// TODO: When you edit or delete a transaction, make it so it updates everything properly
 		response, exit := utils.GetUserResponse(`Welcome to Finance!
-		Spending money is: %v
+		Spending money is: $%v
 		Your emergency fund should be at: $%v
+		You should add $%v to your savings account this month
 		What would you like to do?
 				1) Add a transaction
 				2) Display and edit all transactions
 				3) View and edit monthly expenses
-				4) Change expected monthly income
-				5) View and edit goals
-				6) Manage your emergency fund
-				7) Pass a month by for testing`, fmt.Sprint(shared.GetEstimatedSpendingMoney()), emergencyAmount)
+				4) View and edit goals
+				5) Manage your emergency fund
+				6) Manage your savings
+				7) Change expected monthly income
+				8) Pass a month by for testing`, db.GetEstimatedSpendingMoney(), emergencyAmount, db.GetAmountToSaveThisMonth())
 
 		if exit {
 			return
@@ -43,12 +46,14 @@ func main() {
 		case "3":
 			handlers.HandleViewAndEditMonthlyExpenses()
 		case "4":
-			handlers.HandleChangeExpectedIncome()
-		case "5":
 			handlers.HandleViewAndEditGoal()
-		case "6":
+		case "5":
 			handlers.HandleEmergencyFund()
+		case "6":
+			handlers.HandleSavings()
 		case "7":
+			handlers.HandleChangeExpectedIncome()
+		case "8":
 			//pass a month for testing
 			shared.MonthlyTask()
 
@@ -63,7 +68,7 @@ func main() {
 // When the program first comes online, calculate the spending money based on the transactions
 // This is to prevent any desyncs from not being online during the start of the month or other
 func calculateSpendingMoney() float32 {
-	transactions := shared.GetAllTransactions(nil, nil)
+	transactions := db.GetAllTransactions(nil, nil)
 
 	var spendingMoney float32 = 0.0
 	for i := 0; i < len(transactions); i++ {

@@ -44,7 +44,7 @@ func GetUserResponseInt(prompt string, formatVariables ...any) (parsedInt int, e
 	for {
 		response, exit := GetUserResponse(prompt, formatVariables...)
 		pInt, err := strconv.Atoi(response)
-		if err != nil {
+		if err != nil || pInt < 0 {
 			fmt.Println("Invalid Input")
 			continue
 		}

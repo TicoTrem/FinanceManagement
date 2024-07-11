@@ -2,10 +2,10 @@ package handlers
 
 import (
 	"fmt"
+	"github.com/ticotrem/finance/shared/db"
 	"strconv"
 	"time"
 
-	"github.com/ticotrem/finance/shared"
 	"github.com/ticotrem/finance/shared/utils"
 )
 
@@ -22,12 +22,12 @@ func HandleAddTransaction() {
 			continue
 		}
 
-		shared.AddTransaction(&shared.Transaction{Amount: amount, Date: time.Now(), Description: "User Added"})
+		db.AddTransaction(&db.Transaction{Amount: amount, Date: time.Now(), Description: "User Added"})
 		fmt.Println("Your transaction has successfully been added to the database!")
 		// if the transaction is positive, we just need to add it to the database as above.
 		// if it is negative, we will lower the estimated spending money accordingly
 		if amount < 0 {
-			shared.SetEstimatedSpendingMoney(shared.GetEstimatedSpendingMoney() + amount) // adding a negative is still negative
+			db.SetEstimatedSpendingMoney(db.GetEstimatedSpendingMoney() + amount) // adding a negative is still negative
 		}
 		break
 	}
@@ -35,9 +35,9 @@ func HandleAddTransaction() {
 }
 
 func HandleDisplayEditTransactions() {
-	transactions := shared.GetAllTransactions(nil, nil)
+	transactions := db.GetAllTransactions(nil, nil)
 
-	var selectedTransaction shared.Transaction
+	var selectedTransaction db.Transaction
 	var parsedInt int
 	for i := 0; i < len(transactions); i++ {
 		fmt.Printf("%v:\tAmount: %v\t Date: %v\tDescription: %v\n", i+1, transactions[i].Amount, transactions[i].Date.Local().Format(time.DateTime), transactions[i].Description)
@@ -75,7 +75,7 @@ func HandleDisplayEditTransactions() {
 
 }
 
-func handleEditTransaction(selectedTransaction shared.Transaction) {
+func handleEditTransaction(selectedTransaction db.Transaction) {
 	for {
 		response, exit := utils.GetUserResponse("Please enter the new amount for this transaction: ")
 		if exit {
@@ -87,7 +87,7 @@ func handleEditTransaction(selectedTransaction shared.Transaction) {
 			continue
 		}
 		selectedTransaction.Amount = float32(parsedFloat)
-		shared.UpdateTransaction(&selectedTransaction)
+		db.UpdateTransaction(&selectedTransaction)
 		break
 	}
 }

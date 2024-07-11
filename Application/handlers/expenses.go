@@ -2,15 +2,15 @@ package handlers
 
 import (
 	"fmt"
+	"github.com/ticotrem/finance/shared/db"
 	"strconv"
 	"time"
 
-	"github.com/ticotrem/finance/shared"
 	"github.com/ticotrem/finance/shared/utils"
 )
 
 func HandleViewAndEditMonthlyExpenses() {
-	monthlyExpenses := shared.GetAllMonthlyExpensesStructs()
+	var monthlyExpenses []db.MonthlyExpense = db.GetAllMonthlyExpensesStructs()
 	for i := 0; i < len(monthlyExpenses); i++ {
 		fmt.Printf("%v:\tName: %v\tAmount: %v\n", i+1, monthlyExpenses[i].Name, monthlyExpenses[i].Amount)
 	}
@@ -25,7 +25,7 @@ func HandleViewAndEditMonthlyExpenses() {
 
 }
 
-func editMonthlyExpense(monthlyExpense shared.MonthlyExpense) {
+func editMonthlyExpense(monthlyExpense db.MonthlyExpense) {
 
 	fmt.Printf(`You have selected %v. Please select an option:
 	1) Change the name
@@ -60,7 +60,7 @@ func editMonthlyExpense(monthlyExpense shared.MonthlyExpense) {
 			monthlyExpense.UpdateExpenseAmount(newAmount)
 			amountChanged := newAmount - oldAmount
 			// updated the estimated spending money
-			shared.SetEstimatedSpendingMoney(shared.GetEstimatedSpendingMoney() + amountChanged)
+			db.SetEstimatedSpendingMoney(db.GetEstimatedSpendingMoney() + amountChanged)
 		case "3":
 			for {
 				response, exit := utils.GetUserResponse("Was the payment made already this month?\n1) Yes\n2) No")
@@ -68,7 +68,7 @@ func editMonthlyExpense(monthlyExpense shared.MonthlyExpense) {
 					return
 				}
 				if response == "2" {
-					shared.SetEstimatedSpendingMoney(shared.GetEstimatedSpendingMoney() + monthlyExpense.Amount)
+					db.SetEstimatedSpendingMoney(db.GetEstimatedSpendingMoney() + monthlyExpense.Amount)
 					fmt.Printf("The %v monthly expense has been deleted and $%v has been added to your estimated spending money!\n", monthlyExpense.Name, monthlyExpense.Amount)
 				} else if response == "1" {
 					fmt.Printf("The %v monthly expense has been deleted!\n", monthlyExpense.Name)
@@ -89,7 +89,7 @@ func editMonthlyExpense(monthlyExpense shared.MonthlyExpense) {
 }
 
 func handleAddNewMonthlyExpense() {
-	expense := shared.MonthlyExpense{}
+	expense := db.MonthlyExpense{}
 	for {
 		var exit bool
 		expense.Name, exit = utils.GetUserResponse("Please enter the name for the new expense: ")
@@ -109,15 +109,15 @@ func handleAddNewMonthlyExpense() {
 		break
 	}
 
-	shared.AddMonthlyExpense(expense)
+	db.AddMonthlyExpense(expense)
 	// next month it will automatically calculate this, but for this month we just
 	// adjust the estimated spending money
-	shared.SetEstimatedSpendingMoney(shared.GetEstimatedSpendingMoney() + expense.Amount)
+	db.SetEstimatedSpendingMoney(db.GetEstimatedSpendingMoney() + expense.Amount)
 
 }
 
 func HandleViewAndEditGoal() {
-	monthlyGoals := shared.GetAllGoalStructs()
+	monthlyGoals := db.GetAllGoalStructs()
 	for i := 0; i < len(monthlyGoals); i++ {
 		fmt.Printf("%v:\tName: %v\tAmount: %v/%v\tAmount per month: $%.2f\tMonths left: %v\n", i+1, monthlyGoals[i].Name, monthlyGoals[i].AmountSaved, monthlyGoals[i].Amount, monthlyGoals[i].AmountPerMonth, monthlyGoals[i].GetMonthsToComplete())
 	}
@@ -135,7 +135,7 @@ func HandleViewAndEditGoal() {
 // have two types of goals. Goals you set a date and it tells you how much money to put towards it per month
 // and goals you set a monthly amount you can afford and it will tell you the date you will have enough
 func handleAddNewGoal() {
-	goal := shared.Goal{}
+	goal := db.Goal{}
 	var exit bool
 	goal.Name, exit = utils.GetUserResponse(`What would you like to name this goal?`)
 	if exit {
@@ -161,6 +161,7 @@ func handleAddNewGoal() {
 					return
 				}
 				goal.PopulateDateComplete()
+				break
 			}
 		case "2":
 			goal.DateComplete, exit = getDateFromUser()
@@ -173,7 +174,7 @@ func handleAddNewGoal() {
 		}
 		break
 	}
-	shared.AddGoal(&goal)
+	db.AddGoal(&goal)
 	fmt.Printf("Your goal was successfully created, you will save $%v per month for %v months", goal.AmountPerMonth, goal.GetMonthsToComplete())
 
 }
@@ -198,7 +199,7 @@ func getDateFromUser() (date time.Time, exit bool) {
 	}
 }
 
-func manageGoal(goal shared.Goal) {
+func manageGoal(goal db.Goal) {
 	response, exit := utils.GetUserResponse(`What would you like to do with your %v goal?
 										1) Edit goal values
 										2) Contribute one time payment to goal
@@ -216,7 +217,7 @@ func manageGoal(goal shared.Goal) {
 	}
 }
 
-func editGoal(goal shared.Goal) {
+func editGoal(goal db.Goal) {
 	response, exit := utils.GetUserResponse(`Would you like to edit:
 												1) Goal name
 												2) Goal amount
@@ -272,7 +273,7 @@ func editGoal(goal shared.Goal) {
 	}
 }
 
-func contributeToGoal(goal shared.Goal) {
+func contributeToGoal(goal db.Goal) {
 	response, exit := utils.GetUserResponseFloat("How much would you like to contribute to the goal? (This will be deducted from your spending money)")
 	if exit {
 		return

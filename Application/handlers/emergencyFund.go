@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"fmt"
-	"github.com/ticotrem/finance/shared"
+	"github.com/ticotrem/finance/shared/db"
 	"github.com/ticotrem/finance/shared/utils"
 )
 
@@ -13,7 +13,7 @@ func HandleEmergencyFund() {
 
 	// emergency fund should cover 6 months of your expenses (also can be used for random surprise payments
 
-	emergencyAmount, emergencyMax := shared.GetEmergencyData()
+	emergencyAmount, emergencyMax := db.GetEmergencyData()
 	fmt.Printf("Welcome to to your emergency fund.\nCurrent fund is $%v/$%v\n"+
 		"If your emergency fund is not full, half your new monthly spending money will "+
 		"go towards it until filled.\n", emergencyMax, emergencyAmount)
@@ -31,7 +31,7 @@ func HandleEmergencyFund() {
 		if exit {
 			return
 		}
-		enough := shared.SpendEmergencyFund(response)
+		enough := db.SpendEmergencyFund(response)
 		if !enough {
 			fmt.Println("There is not enough money in your emergency fund. I hope you have savings!")
 		}
