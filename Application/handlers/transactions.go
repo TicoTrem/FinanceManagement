@@ -34,48 +34,31 @@ func HandleAddTransaction() {
 
 }
 
+var selectedTransaction db.Transaction
+
 func HandleDisplayEditTransactions() {
-	transactions := db.GetAllTransactions(nil, nil)
+	now := time.Now().AddDate(0, 0, 1)
+	dBegin := now.AddDate(0, -1, -2)
+	// get all transactions within the past month
+	transactions := db.GetAllTransactions(&dBegin, &now)
 
-	var selectedTransaction db.Transaction
 	var parsedInt int
-	for i := 0; i < len(transactions); i++ {
-		fmt.Printf("%v:\tAmount: %v\t Date: %v\tDescription: %v\n", i+1, utils.GetMoneyString(transactions[i].Amount), transactions[i].Date.Local().Format(time.DateTime), transactions[i].Description)
-	}
-	for {
-		response, exit := utils.GetUserResponse("If you would like to edit or delete one of these transactions, please enter the number of the transaction")
-		if exit {
-			return
-		}
-		parsedInt, err := strconv.Atoi(response)
-		if err != nil || parsedInt < 1 || parsedInt > len(transactions) {
-			fmt.Println("Invalid input")
-			continue
-		}
-		selectedTransaction = transactions[parsedInt-1]
-		break
-	}
-	for {
-		response, exit := utils.GetUserResponse("Transaction %v:\tAmount: %v\t Date: %v\t was selected.\nWould you like to\n1) Edit the transaction value\n2) Delete the transaction\n",
-			parsedInt, selectedTransaction.Amount, selectedTransaction.Date)
-		if exit {
-			return
-		}
-		switch response {
-		case "1":
-			handleEditTransaction(selectedTransaction)
-		case "2":
-			selectedTransaction.Delete()
-		default:
-			fmt.Println("Invalid input")
-			continue
-		}
-		break
-	}
+	//for i := 0; i < len(transactions); i++ {
+	//	fmt.Printf("%v:\tAmount: %v\t Date: %v\tDescription: %v\n", i+1, utils.GetMoneyString(transactions[i].Amount), transactions[i].Date.Local().Format(time.DateTime), transactions[i].Description)
+	//}
+	var selectedTransactionPtr *db.Transaction = utils.SelectRecordOrCreate(transactions, HandleAddTransaction)
 
+	if selectedTransactionPtr == nil {
+		return
+	}
+	selectedTransaction = *selectedTransactionPtr
+
+	options := []string{"Edit the transaction value", "Delete the transaction"}
+	functions := []func(){handleEditTransaction, selectedTransaction.Delete}
+	utils.PromptAndHandle("Transaction %v:\\tAmount: %v\\t Date: %v\\t was selected.\\nWould you like to:", options, functions, parsedInt, selectedTransaction.Amount, selectedTransaction.Date)
 }
 
-func handleEditTransaction(selectedTransaction db.Transaction) {
+func handleEditTransaction() {
 	for {
 		response, exit := utils.GetUserResponse("Please enter the new amount for this transaction: ")
 		if exit {

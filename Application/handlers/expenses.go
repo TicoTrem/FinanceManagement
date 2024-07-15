@@ -3,10 +3,8 @@ package handlers
 import (
 	"fmt"
 	"github.com/ticotrem/finance/shared/db"
-	"math"
-	"time"
-
 	"github.com/ticotrem/finance/shared/utils"
+	"math"
 )
 
 var selectedExpense db.MonthlyExpense
@@ -162,25 +160,25 @@ func handleAddNewGoal() {
 
 }
 
-func getDateFromUser() (date time.Time, exit bool) {
-	returnTime := time.Time{}
-	for {
-		yearInt, exit := utils.GetUserResponseInt("What year would you like the goal to be met by?")
-		if exit {
-			return returnTime, true
-		}
-		monthInt, exit := utils.GetUserResponseInt("What month would you like the goal to be met by?")
-		if exit {
-			return returnTime, true
-		}
-		dayInt, exit := utils.GetUserResponseInt("What day would you like the goal to be met by?")
-		if exit {
-			return returnTime, true
-		}
-		returnTime = time.Date(yearInt, time.Month(monthInt), dayInt, 0, 0, 0, 0, time.Local)
-		return returnTime, false
-	}
-}
+//func getDateFromUser() (date time.Time, exit bool) {
+//	returnTime := time.Time{}
+//	for {
+//		yearInt, exit := utils.GetUserResponseInt("What year would you like the goal to be met by?")
+//		if exit {
+//			return returnTime, true
+//		}
+//		monthInt, exit := utils.GetUserResponseInt("What month would you like the goal to be met by?")
+//		if exit {
+//			return returnTime, true
+//		}
+//		dayInt, exit := utils.GetUserResponseInt("What day would you like the goal to be met by?")
+//		if exit {
+//			return returnTime, true
+//		}
+//		returnTime = time.Date(yearInt, time.Month(monthInt), dayInt, 0, 0, 0, 0, time.Local)
+//		return returnTime, false
+//	}
+//}
 
 func manageGoal(goal db.Goal) {
 	response, exit := utils.GetUserResponse(`What would you like to do with your %v goal?
@@ -247,7 +245,6 @@ func editGoal(goal db.Goal) {
 		goal.UpdateMonthsLeft(months)
 		fmt.Printf("Your monthly contribution will now be %v to achieve your goal in %v months", goal.AmountPerMonth, goal.MonthsLeft)
 	case "4":
-		hjjh
 		response, exit := utils.GetUserResponseFloat("What would you like the new monthly payment to be?")
 		if exit {
 			return

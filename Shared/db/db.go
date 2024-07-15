@@ -77,7 +77,7 @@ func IncreaseEmergencyFund(amount float32) {
 	}
 	emergencyAmount, _ := GetEmergencyData()
 	// make adding to this a transaction, lowering spending money
-	AddTransaction(&Transaction{Amount: -amount, Date: time.Now().AddDate(0, 0, -1), Description: "Emergency Fund: Refill fund"})
+	AddTransaction(&Transaction{Amount: -amount, Date: time.Now().AddDate(0, 0, -1), Description: "(Emergency Fund) Refill fund"})
 	_, err := Database.Exec("UPDATE Variables SET emergencyAmount = ?;", emergencyAmount+amount)
 	if err != nil {
 		log.Fatal("Error updating emergency values into variables table:" + err.Error())

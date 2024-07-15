@@ -54,7 +54,7 @@ func GetAllTransactions(dBegin *time.Time, dEnd *time.Time) []Transaction {
 		rows, err = Database.Query("SELECT * FROM Transactions ORDER BY date;")
 	}
 	if err != nil {
-		log.Fatal("Querying all transactions last month failed: " + err.Error())
+		log.Fatal("Querying transactions failed: " + err.Error())
 	}
 
 	defer rows.Close()

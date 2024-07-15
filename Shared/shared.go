@@ -143,7 +143,7 @@ func addMonthlyTransactions(emergencyAmount float32, emergencyMax float32) {
 	// add expenses as transactions
 	var expenses []db.MonthlyExpense = db.GetAllMonthlyExpensesStructs()
 	for i := 0; i < len(expenses); i++ {
-		db.AddTransaction(&db.Transaction{Amount: -expenses[i].Amount, Date: time.Now().AddDate(0, 0, -1), Description: fmt.Sprintf("Expenses: $%v %v monthly payment", expenses[i].Amount, expenses[i].Name)})
+		db.AddTransaction(&db.Transaction{Amount: -expenses[i].Amount, Date: time.Now().AddDate(0, 0, -1), Description: fmt.Sprintf("(Expenses) $%v %v monthly payment", expenses[i].Amount, expenses[i].Name)})
 	}
 
 	// The emergency fund takes half of the netTransaction change if it is positive.

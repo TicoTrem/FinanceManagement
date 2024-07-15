@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/ticotrem/finance/handlers"
 	"github.com/ticotrem/finance/shared"
@@ -19,11 +18,6 @@ func main() {
 	// TODO: how can I make sure the service is currently running?
 	_, emergencyAmount := db.GetEmergencyData()
 
-	// TODO: When you edit or delete a transaction, make it so it updates everything properly
-	fmt.Printf("Welcome to Finance!\nSpending money is: %v\nYour emergency fund should be at: $%v\n"+
-		"You should add $%v to your savings account for last month",
-		utils.GetMoneyString(db.GetEstimatedSpendingMoney()), emergencyAmount, db.GetAmountToSaveThisMonth())
-
 	options := []string{"Add a transaction", "Display and edit all transactions", "View and edit monthly expenses",
 		"View and edit goals", "Manage your emergency fund", "Manage your savings",
 		"Change expected monthly income", "Pass a month by for testing"}
@@ -31,7 +25,11 @@ func main() {
 		handlers.HandleViewAndEditGoal, handlers.HandleEmergencyFund, handlers.HandleSavings,
 		handlers.HandleChangeExpectedIncome, shared.MonthlyTask}
 
-	utils.PromptAndHandle("What would you like to do?", options, methods, nil)
+	for {
+		utils.PromptAndHandle("Welcome to Finance!\nSpending money is: %v\nYour emergency fund should be at: $%v\n"+
+			"You should add $%v to your savings account for last month\nWhat would you like to do?", options, methods,
+			utils.GetMoneyString(db.GetEstimatedSpendingMoney()), emergencyAmount, db.GetAmountToSaveThisMonth())
+	}
 
 }
 

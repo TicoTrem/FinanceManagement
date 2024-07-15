@@ -76,7 +76,7 @@ func (goal *Goal) SaveMonthlyAmount(overrideValue float32) {
 		log.Fatal("override value cannot be a negative value, please check this")
 	}
 
-	AddTransaction(&Transaction{Amount: amountToTransact, Date: time.Now().AddDate(0, 0, -1), Description: fmt.Sprintf("Goal: %v monthly savings", goal.Name)})
+	AddTransaction(&Transaction{Amount: amountToTransact, Date: time.Now().AddDate(0, 0, -1), Description: fmt.Sprintf("(Goal) %v monthly savings", goal.Name)})
 	_, err := Database.Exec("UPDATE Goals SET amountSaved = ? WHERE id = ?;", goal.AmountSaved-amountToTransact, goal.Id)
 	goal.UpdateMonthsLeft(goal.GetMonthsLeft() - 1)
 	if err != nil {
