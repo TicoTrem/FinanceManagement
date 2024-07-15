@@ -18,23 +18,18 @@ func HandleEmergencyFund() {
 		"If your emergency fund is not full, half your new monthly spending money will "+
 		"go towards it until filled.\n", emergencyAmount, emergencyMax)
 
-	response, exit := utils.GetUserResponse(`What would you like to do?
-			1) Spend Emergency Fund`)
+	utils.PromptAndHandle("What would you like to do?", []string{"Spend Emergency Fund"}, []func(){handleSpendEmergencyFund}, nil)
+}
+
+func handleSpendEmergencyFund() {
+	// It is not a transaction record to spend the emergency fund,
+	// it is a transaction to fill it
+	response, exit := utils.GetUserResponseFloat("How much would you like to spend? (Note: this will not change spending money)")
 	if exit {
 		return
 	}
-	switch response {
-	case "1":
-		// It is not a transaction record to spend the emergency fund,
-		// it is a transaction to fill it
-		response, exit := utils.GetUserResponseFloat(`How much would you like to spend? (Note this will not change spending money)`)
-		if exit {
-			return
-		}
-		enough := db.SpendEmergencyFund(response)
-		if !enough {
-			fmt.Println("There is not enough money in your emergency fund. I hope you have savings!")
-		}
+	enough := db.SpendEmergencyFund(response)
+	if !enough {
+		fmt.Println("There is not enough money in your emergency fund. I hope you have savings!")
 	}
-
 }

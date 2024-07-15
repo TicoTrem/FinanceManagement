@@ -4,114 +4,92 @@ import (
 	"fmt"
 	"github.com/ticotrem/finance/shared/db"
 	"math"
-	"strconv"
 	"time"
 
 	"github.com/ticotrem/finance/shared/utils"
 )
 
+var selectedExpense db.MonthlyExpense
+
 func HandleViewAndEditMonthlyExpenses() {
 	var monthlyExpenses []db.MonthlyExpense = db.GetAllMonthlyExpensesStructs()
-	for i := 0; i < len(monthlyExpenses); i++ {
-		fmt.Printf("%v:\tName: %v\tAmount: %v\n", i+1, monthlyExpenses[i].Name, monthlyExpenses[i].Amount)
+
+	optionStrings := []string{}
+	for name, amount := range monthlyExpenses {
+		optionStrings = append(optionStrings, fmt.Sprintf("Name: %v\tAmount: %v", name, amount))
 	}
-	response, createNew, exit := utils.CreateNewOrInt("Enter the number of the expense you would like to edit, or 'c' to create a new one", 1, len(monthlyExpenses))
-	if exit {
-		return
-	} else if createNew {
-		handleAddNewMonthlyExpense()
-	} else {
-		editMonthlyExpense(monthlyExpenses[response-1])
+	var selectedExpensePtr *db.MonthlyExpense = utils.SelectRecordOrCreate(monthlyExpenses, handleAddNewMonthlyExpense)
+
+	// if the above method call wasnt exited or created new record
+	if selectedExpensePtr != nil {
+		selectedExpense = *selectedExpensePtr
+		editMonthlyExpense()
 	}
 
 }
 
-func editMonthlyExpense(monthlyExpense db.MonthlyExpense) {
+func editMonthlyExpense() {
+	options := []string{"Chance the name", "Change the amount", "Delete the expense"}
+	methods := []func(){handleChangeExpenseName, handleChangeExpenseMonthlyAmount, handleDeleteExpense}
+	utils.PromptAndHandle("You have selected %v. Please select an option:", options, methods)
+}
 
-	fmt.Printf(`You have selected %v. Please select an option:
-	1) Change the name
-	2) Change the amount
-	3) Delete the expense`, monthlyExpense.Name)
+func handleChangeExpenseName() {
+	response, exit := utils.GetUserResponse("Please enter the new name for this expense: ")
+	if exit {
+		return
+	}
+	selectedExpense.UpdateExpenseName(response)
+	fmt.Println("The expense name has been updated to " + response)
+}
 
-	for {
-		response, exit := utils.GetUserResponse("")
-		if exit {
-			return
-		}
-		switch response {
-		case "1":
-			response, exit := utils.GetUserResponse("Please enter the new name for this expense: ")
-			if exit {
-				return
-			}
-			monthlyExpense.UpdateExpenseName(response)
-			fmt.Println("The expense name has been updated to " + response)
-		case "2":
-			newMonthlyResponse, exit := utils.GetUserResponse("Please enter the new monthly amount for this expense: ")
-			if exit {
-				return
-			}
-			float64bit, err := strconv.ParseFloat(newMonthlyResponse, 32)
-			if err != nil {
-				fmt.Println("The value could not be converted in to a float!")
-				continue
-			}
-			oldAmount := monthlyExpense.Amount
-			newAmount := float32(float64bit)
-			monthlyExpense.UpdateExpenseAmount(newAmount)
-			amountChanged := newAmount - oldAmount
-			// updated the estimated spending money
-			db.SetEstimatedSpendingMoney(db.GetEstimatedSpendingMoney() - amountChanged)
-		case "3":
-			for {
-				response, exit := utils.GetUserResponse("Was the payment made already this month?\n1) Yes\n2) No")
-				if exit {
-					return
-				}
-				if response == "2" {
-					db.SetEstimatedSpendingMoney(db.GetEstimatedSpendingMoney() + monthlyExpense.Amount)
-					fmt.Printf("The %v monthly expense has been deleted and $%v has been added to your estimated spending money!\n", monthlyExpense.Name, monthlyExpense.Amount)
-				} else if response == "1" {
-					fmt.Printf("The %v monthly expense has been deleted!\n", monthlyExpense.Name)
-				} else {
-					fmt.Println("Invalid response")
-					continue
-				}
-				break
-			}
-			monthlyExpense.Delete()
-		default:
-			fmt.Println("Invalid input")
-			continue
-		}
-		break
+func handleChangeExpenseMonthlyAmount() {
+	parsedFloat, exit := utils.GetUserResponseFloat("Please enter the new monthly amount for this expense: ")
+	if exit {
+		return
+	}
+	// values should always be positive, they are assumed to be a negative transaction
+	parsedFloat = float32(math.Abs(float64(parsedFloat)))
+
+	oldAmount := selectedExpense.Amount
+	newAmount := float32(parsedFloat)
+	selectedExpense.UpdateExpenseAmount(newAmount)
+	amountChanged := newAmount - oldAmount
+	// updated the estimated spending money
+	db.SetEstimatedSpendingMoney(db.GetEstimatedSpendingMoney() - amountChanged)
+}
+
+func handleDeleteExpense() {
+	methods := []func(){
+		func() {
+			fmt.Printf("The %v monthly expense has been deleted!\n", selectedExpense.Name)
+		},
+		func() {
+			db.SetEstimatedSpendingMoney(db.GetEstimatedSpendingMoney() + selectedExpense.Amount)
+			fmt.Printf("The %v monthly expense has been deleted and $%v has been added to your estimated spending money!\n",
+				selectedExpense.Name, selectedExpense.Amount)
+		},
 	}
 
+	utils.PromptAndHandle("Was the payment made already this month?", []string{"Yes", "No"}, methods)
+
+	selectedExpense.Delete()
 }
 
 func handleAddNewMonthlyExpense() {
 	expense := db.MonthlyExpense{}
-	for {
-		var exit bool
-		expense.Name, exit = utils.GetUserResponse("Please enter the name for the new expense: ")
-		if exit {
-			return
-		}
-		amountString, exit := utils.GetUserResponse("Please enter the monthly amount for the new expense: ")
-		if exit {
-			return
-		}
-		parsedFloat, err := strconv.ParseFloat(amountString, 32)
-		if err != nil {
-			fmt.Println("Invalid input")
-			continue
-		}
-		// values should always be positive, they are assumed to be a negative transaction
-		parsedFloat = math.Abs(parsedFloat)
-
-		expense.Amount = float32(parsedFloat)
-		break
+	var exit bool
+	expense.Name, exit = utils.GetUserResponse("Please enter the name for the new expense: ")
+	if exit {
+		return
 	}
+	parsedFloat, exit := utils.GetUserResponseFloat("Please enter the monthly amount for the new expense: ")
+	if exit {
+		return
+	}
+
+	// values should always be positive, they are assumed to be a negative transaction
+	parsedFloat = float32(math.Abs(float64(parsedFloat)))
 
 	db.AddMonthlyExpense(expense)
 	// next month it will automatically calculate this, but for this month we just
@@ -269,6 +247,7 @@ func editGoal(goal db.Goal) {
 		goal.UpdateMonthsLeft(months)
 		fmt.Printf("Your monthly contribution will now be %v to achieve your goal in %v months", goal.AmountPerMonth, goal.MonthsLeft)
 	case "4":
+		hjjh
 		response, exit := utils.GetUserResponseFloat("What would you like the new monthly payment to be?")
 		if exit {
 			return

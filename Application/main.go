@@ -19,58 +19,23 @@ func main() {
 	// TODO: how can I make sure the service is currently running?
 	_, emergencyAmount := db.GetEmergencyData()
 
-	for {
+	// TODO: When you edit or delete a transaction, make it so it updates everything properly
+	fmt.Printf("Welcome to Finance!\nSpending money is: %v\nYour emergency fund should be at: $%v\n"+
+		"You should add $%v to your savings account for last month",
+		utils.GetMoneyString(db.GetEstimatedSpendingMoney()), emergencyAmount, db.GetAmountToSaveThisMonth())
 
-		// TODO: When you edit or delete a transaction, make it so it updates everything properly
-		response, exit := utils.GetUserResponse(`Welcome to Finance!
-		Spending money is: %v
-		Your emergency fund should be at: $%v
-		You should add $%v to your savings account for last month
-		What would you like to do?
-				1) Add a transaction
-				2) Display and edit all transactions
-				3) View and edit monthly expenses
-				4) View and edit goals
-				5) Manage your emergency fund
-				6) Manage your savings
-				7) Change expected monthly income
-				8) Pass a month by for testing`, utils.GetMoneyString(db.GetEstimatedSpendingMoney()), emergencyAmount, db.GetAmountToSaveThisMonth())
+	options := []string{"Add a transaction", "Display and edit all transactions", "View and edit monthly expenses",
+		"View and edit goals", "Manage your emergency fund", "Manage your savings",
+		"Change expected monthly income", "Pass a month by for testing"}
+	methods := []func(){handlers.HandleAddTransaction, handlers.HandleDisplayEditTransactions, handlers.HandleViewAndEditMonthlyExpenses,
+		handlers.HandleViewAndEditGoal, handlers.HandleEmergencyFund, handlers.HandleSavings,
+		handlers.HandleChangeExpectedIncome, shared.MonthlyTask}
 
-		if exit {
-			return
-		}
-		switch response {
-		case "1":
-			handlers.HandleAddTransaction()
-		case "2":
-			handlers.HandleDisplayEditTransactions()
-		case "3":
-			handlers.HandleViewAndEditMonthlyExpenses()
-		case "4":
-			handlers.HandleViewAndEditGoal()
-		case "5":
-			handlers.HandleEmergencyFund()
-		case "6":
-			handlers.HandleSavings()
-		case "7":
-			handlers.HandleChangeExpectedIncome()
-		case "8":
-			//pass a month for testing
-			//T-O-D-O figure out why passing month isnt increasing spending money
-			// it was just because estimated spending money was the same no matter how many
-			// months I passed because the real non estimated spendingMoney was not going up when I was testing.
-			// The value I was seeing WAS the amount with the estimated 1000 monthly income included
-			shared.MonthlyTask()
-
-		default:
-			fmt.Println("Invalid input")
-			continue
-		}
-	}
+	utils.PromptAndHandle("What would you like to do?", options, methods, nil)
 
 }
 
-// When the program first comes online, calculate the spending money based on the transactions
+// TODO When the service first comes online, calculate the spending money based on the transactions
 // This is to prevent any desyncs from not being online during the start of the month or other
 func calculateSpendingMoney() float32 {
 	transactions := db.GetAllTransactions(nil, nil)
