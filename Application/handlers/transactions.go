@@ -48,7 +48,7 @@ func HandleDisplayEditTransactions() {
 			return
 		}
 		parsedInt, err := strconv.Atoi(response)
-		if err != nil || parsedInt < 0 || parsedInt > len(transactions) {
+		if err != nil || parsedInt < 1 || parsedInt > len(transactions) {
 			fmt.Println("Invalid input")
 			continue
 		}

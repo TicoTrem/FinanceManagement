@@ -165,7 +165,7 @@ func handleAddNewGoal() {
 				if exit {
 					return
 				}
-				goal.PopulateDateComplete()
+				goal.PopulateMonthsLeft()
 				break
 			}
 		case "2":

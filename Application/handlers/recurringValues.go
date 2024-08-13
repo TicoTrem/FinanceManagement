@@ -9,7 +9,7 @@ import (
 
 func HandleChangeExpectedIncome() {
 	for {
-		response, exit := utils.GetUserResponse("What is your new expected monthly income?")
+		response, exit := utils.GetUserResponse("Your current expected income is $%v. What is your new expected monthly income?", db.GetExpectedMonthlyIncome())
 		if exit {
 			return
 		}

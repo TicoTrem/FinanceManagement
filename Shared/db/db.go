@@ -72,6 +72,9 @@ func GetEmergencyData() (max float32, amount float32) {
 
 // used in different module so its grayed out
 func IncreaseEmergencyFund(amount float32) {
+	if amount <= 0 {
+		return
+	}
 	emergencyAmount, _ := GetEmergencyData()
 	// make adding to this a transaction, lowering spending money
 	AddTransaction(&Transaction{Amount: -amount, Date: time.Now().AddDate(0, 0, -1), Description: "Emergency Fund: Refill fund"})

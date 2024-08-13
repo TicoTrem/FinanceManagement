@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/ticotrem/finance/shared/db"
 	"log"
+	"math"
 	"time"
 )
 
@@ -152,6 +153,7 @@ func addMonthlyTransactions(emergencyAmount float32, emergencyMax float32) {
 	// if emergency is full
 	if difference <= 0 {
 		// add full savings amount to savings
+		db.SetAmountToSaveThisMonth(float32(math.Max(float64(savings), 0.0)))
 		if savings > 0 {
 			db.AddTransaction(&db.Transaction{Amount: -savings, Date: time.Now().AddDate(0, 0, -1), Description: fmt.Sprintf("Savings: $%v monthly contribution", savings)})
 		}

@@ -101,7 +101,7 @@ func (goal *Goal) UpdateGoalAmount(amount float32, payMoreMonthly bool) {
 	} else { // adjust the time to completion
 		// this will calculate and apply a new value since goal.Amount changed
 		goal.PopulateMonthsLeft()
-		_, err = Database.Exec("UPDATE MonthlyExpenses SET amount = ? AND dateComplete = ? WHERE id = ?;", amount, goal.DateComplete, goal.Id)
+		_, err = Database.Exec("UPDATE MonthlyExpenses SET amount = ? AND monthsLeft = ? WHERE id = ?;", amount, goal.MonthsLeft, goal.Id)
 	}
 	if err != nil {
 		log.Fatal("Failed to update the expense amount: " + err.Error())
@@ -116,11 +116,12 @@ func (goal *Goal) UpdateGoalDate(date time.Time) {
 	goal.PopulateAmountPerMonth()
 }
 func (goal *Goal) UpdateGoalMonthly(amountPerMonth float32) {
+	// change the amount per month, which will change the monthsleft calculation in PopulateMonthsLeft
 	goal.AmountPerMonth = amountPerMonth
-	// updates the date it will be completed by based on the amount per month and the unchanged amount
+	// updates the amount of months left based on the amount per month and the unchanged amount attribute
 	goal.PopulateMonthsLeft()
 	// update date in database
-	_, err := Database.Exec("UPDATE Goals SET dateComplete = ? WHERE id = ?;", goal.DateComplete, goal.Id)
+	_, err := Database.Exec("UPDATE Goals SET monthsLeft = ? WHERE id = ?;", goal.MonthsLeft, goal.Id)
 	if err != nil {
 		log.Fatal("Failed to update the dateComplete based on the new amountPerMonth in database: " + err.Error())
 	}

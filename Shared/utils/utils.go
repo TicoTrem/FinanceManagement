@@ -20,7 +20,7 @@ func GetUserResponse(prompt string, formatVariables ...any) (response string, ex
 		log.Fatal("Error reading input:", err)
 		return
 	}
-	if userResponse == "0" {
+	if userResponse == "exit" {
 		return userResponse, true
 	}
 	return userResponse, false

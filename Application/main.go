@@ -7,6 +7,7 @@ import (
 	"github.com/ticotrem/finance/shared"
 	"github.com/ticotrem/finance/shared/db"
 	"github.com/ticotrem/finance/shared/utils"
+	"math"
 )
 
 // TODO: Make sure we are closing all database connections (defer rows.close())
@@ -20,9 +21,10 @@ func main() {
 	_, emergencyAmount := db.GetEmergencyData()
 
 	for {
+		estimatedMoneyString := getEstimatedSpendingMoneyString()
 		// TODO: When you edit or delete a transaction, make it so it updates everything properly
 		response, exit := utils.GetUserResponse(`Welcome to Finance!
-		Spending money is: $%v
+		Spending money is: %v
 		Your emergency fund should be at: $%v
 		You should add $%v to your savings account for last month
 		What would you like to do?
@@ -33,7 +35,7 @@ func main() {
 				5) Manage your emergency fund
 				6) Manage your savings
 				7) Change expected monthly income
-				8) Pass a month by for testing`, db.GetEstimatedSpendingMoney(), emergencyAmount, db.GetAmountToSaveThisMonth())
+				8) Pass a month by for testing`, estimatedMoneyString, emergencyAmount, db.GetAmountToSaveThisMonth())
 
 		if exit {
 			return
@@ -55,6 +57,10 @@ func main() {
 			handlers.HandleChangeExpectedIncome()
 		case "8":
 			//pass a month for testing
+			//T-O-D-O figure out why passing month isnt increasing spending money
+			// it was just because estimated spending money was the same no matter how many
+			// months I passed because the real non estimated spendingMoney was not going up when I was testing.
+			// The value I was seeing WAS the amount with the estimated 1000 monthly income included
 			shared.MonthlyTask()
 
 		default:
@@ -63,6 +69,18 @@ func main() {
 		}
 	}
 
+}
+
+func getEstimatedSpendingMoneyString() string {
+	var estimatedMoneyString string
+	estimatedSpendingMoney := db.GetEstimatedSpendingMoney()
+	if estimatedSpendingMoney < 0 {
+		absEstimatedSpendingMoney := math.Abs(float64(estimatedSpendingMoney))
+		estimatedMoneyString = fmt.Sprintf("-$%.2f", absEstimatedSpendingMoney)
+	} else {
+		estimatedMoneyString = fmt.Sprintf("$%.2f", estimatedSpendingMoney)
+	}
+	return estimatedMoneyString
 }
 
 // When the program first comes online, calculate the spending money based on the transactions
