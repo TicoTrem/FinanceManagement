@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"fmt"
-	"github.com/ticotrem/finance/shared/db"
 	"strconv"
-	"time"
+
+	"github.com/ticotrem/finance/shared/db"
 
 	"github.com/ticotrem/finance/shared/utils"
 )
@@ -21,8 +21,7 @@ func HandleAddTransaction() {
 			fmt.Println("Invalid input")
 			continue
 		}
-
-		db.AddTransaction(&db.Transaction{Amount: amount, Date: time.Now(), Description: "User Added"})
+		db.AddTransaction(&db.Transaction{Amount: amount, Date: utils.CurrentTime().UTC(), Description: "User Added"})
 		fmt.Println("Your transaction has successfully been added to the database!")
 		// if the transaction is positive, we just need to add it to the database as above.
 		// if it is negative, we will lower the estimated spending money accordingly
@@ -37,7 +36,7 @@ func HandleAddTransaction() {
 var selectedTransaction db.Transaction
 
 func HandleDisplayEditTransactions() {
-	now := time.Now().AddDate(0, 0, 1)
+	now := utils.CurrentTime().AddDate(0, 0, 1).UTC()
 	dBegin := now.AddDate(0, -1, -2)
 	// get all transactions within the past month
 	transactions := db.GetAllTransactions(&dBegin, &now)

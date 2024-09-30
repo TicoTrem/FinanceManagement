@@ -2,12 +2,14 @@ package main
 
 import (
 	"fmt"
-	"github.com/ticotrem/finance/shared/db"
 	"sync"
 	"time"
 
+	"github.com/ticotrem/finance/shared"
+	"github.com/ticotrem/finance/shared/db"
+
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/ticotrem/shared"
+	"github.com/ticotrem/finance/shared/utils"
 )
 
 func StartFinance() {
@@ -15,8 +17,8 @@ func StartFinance() {
 	shared.SetupDatabase()
 	defer db.Database.Close()
 
-	if shared.GetEstimatedSpendingMoney() == 0 {
-		shared.SetEstimatedSpendingMoney(shared.GetExpectedMonthlyIncome() - shared.GetMonthlyExpenses())
+	if db.GetEstimatedSpendingMoney() == 0 {
+		db.SetEstimatedSpendingMoney(db.GetExpectedMonthlyIncome() - db.GetMonthlyExpenses())
 	}
 
 	var waitGroup sync.WaitGroup
@@ -29,7 +31,7 @@ func StartFinance() {
 
 func queueMonthlyTask() {
 	for {
-		now := time.Now()
+		now := utils.CurrentTime()
 		nextMonth := now.AddDate(0, 1, 0)
 		firstOfNextMonth := time.Date(nextMonth.Year(), nextMonth.Month(), 1, 0, 0, 0, 0, now.Location())
 		duration := firstOfNextMonth.Sub(now)
@@ -38,6 +40,6 @@ func queueMonthlyTask() {
 
 		// blocks execution until the timer expires (the start of the month)
 		<-timer.C
-		MonthlyTask()
+		shared.MonthlyTask()
 	}
 }

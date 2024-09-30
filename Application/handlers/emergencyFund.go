@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+
 	"github.com/ticotrem/finance/shared/db"
 	"github.com/ticotrem/finance/shared/utils"
 )
@@ -18,7 +19,7 @@ func HandleEmergencyFund() {
 		"If your emergency fund is not full, half your new monthly spending money will "+
 		"go towards it until filled.\n", emergencyAmount, emergencyMax)
 
-	utils.PromptAndHandle("What would you like to do?", []string{"Spend Emergency Fund"}, []func(){handleSpendEmergencyFund}, nil)
+	utils.PromptAndHandle("What would you like to do?", []string{"Spend Emergency Fund"}, []func(){handleSpendEmergencyFund})
 }
 
 func handleSpendEmergencyFund() {

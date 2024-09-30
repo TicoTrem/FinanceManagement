@@ -3,7 +3,8 @@ package db
 import (
 	"database/sql"
 	"log"
-	"time"
+
+	"github.com/ticotrem/finance/shared/utils"
 )
 
 var Database *sql.DB
@@ -77,7 +78,7 @@ func IncreaseEmergencyFund(amount float32) {
 	}
 	emergencyAmount, _ := GetEmergencyData()
 	// make adding to this a transaction, lowering spending money
-	AddTransaction(&Transaction{Amount: -amount, Date: time.Now().AddDate(0, 0, -1), Description: "(Emergency Fund) Refill fund"})
+	AddTransaction(&Transaction{Amount: -amount, Date: utils.CurrentTime().AddDate(0, 0, -1), Description: "(Emergency Fund) Refill fund"})
 	_, err := Database.Exec("UPDATE Variables SET emergencyAmount = ?;", emergencyAmount+amount)
 	if err != nil {
 		log.Fatal("Error updating emergency values into variables table:" + err.Error())
@@ -88,6 +89,7 @@ func IncreaseEmergencyFund(amount float32) {
 // UpdateMaxEmergencyFund will be ran in finance.go every month before calculating
 // how much to put inside this account to calculate 6 months worth of expenses, and have
 // the emergency fund cover that.
+
 func UpdateMaxEmergencyFund() {
 	// Make sure the resulting number is positive
 	maxAmount := -(GetMonthlyExpenses() * 6)
@@ -121,7 +123,8 @@ func GetSavingsPerMonth() float32 {
 }
 
 func SetSavingsPerMonth(savingsPerMonth float32) {
-	_, err := Database.Exec("INSERT INTO Variables (savingsPerMonth) VALUES (?);", savingsPerMonth)
+
+	_, err := Database.Exec("UPDATE Variables SET savingsPerMonth = ?;", savingsPerMonth)
 	if err != nil {
 		log.Fatal("Failed to update savingsPerMonth variable in database: " + err.Error())
 	}
@@ -138,7 +141,7 @@ func GetAmountToSaveThisMonth() float32 {
 }
 
 func SetAmountToSaveThisMonth(amountToSaveThisMonth float32) {
-	_, err := Database.Exec("INSERT INTO Variables (amountToSaveThisMonth) VALUES (?);", amountToSaveThisMonth)
+	_, err := Database.Exec("UPDATE Variables SET amountToSaveThisMonth ?;", amountToSaveThisMonth)
 	if err != nil {
 		log.Fatal("Failed to update amountToSaveThisMonth variable in database: " + err.Error())
 	}

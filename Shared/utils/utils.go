@@ -12,6 +12,10 @@ import (
 	"time"
 )
 
+func CurrentTime() time.Time {
+	return time.Now()
+}
+
 // the bool is to determine if the user wants to exit that menu
 func GetUserResponse(prompt string, formatVariables ...any) (response string, exit bool) {
 	fmt.Printf(prompt+"\n", formatVariables...)
@@ -84,7 +88,7 @@ func SelectRecordOrCreate[T any](records []T, createNewFunc func()) *T {
 				fieldValue = localTime.Format("2006-01-02 15:04:05")
 			}
 
-			var myTime time.Time = time.Now()
+			var myTime time.Time = CurrentTime()
 
 			myTime = myTime.Local()
 
@@ -119,7 +123,11 @@ func PromptAndHandle(prompt string, options []string, methodsToCall []func(), fo
 		prompt += fmt.Sprintf("\t%v)\t%v\n", i+1, options[i])
 	}
 	for {
-		fmt.Printf(prompt, formatVariables...)
+		if formatVariables != nil {
+			fmt.Printf(prompt, formatVariables...)
+		} else {
+			fmt.Printf(prompt)
+		}
 
 		reader := bufio.NewReader(os.Stdin)
 		userResponse, err := reader.ReadString('\n')

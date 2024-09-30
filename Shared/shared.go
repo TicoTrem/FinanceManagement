@@ -3,10 +3,12 @@ package shared
 import (
 	"database/sql"
 	"fmt"
-	"github.com/ticotrem/finance/shared/db"
 	"log"
 	"math"
 	"time"
+
+	"github.com/ticotrem/finance/shared/db"
+	"github.com/ticotrem/finance/shared/utils"
 )
 
 var isTesting bool = true
@@ -19,7 +21,15 @@ func SetupDatabase() {
 		log.Fatal(err)
 	}
 
-	_, err = dbase.Exec("CREATE DATABASE IF NOT EXISTS Finance")
+	var databaseName string
+	// if isTesting {
+	// 	databaseName = "FinanceTesting"
+	// } else {
+	// 	databaseName = "Finance"
+	// }
+	databaseName = "Finance"
+	_, err = dbase.Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS %s", databaseName))
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -143,45 +153,45 @@ func addMonthlyTransactions(emergencyAmount float32, emergencyMax float32) {
 	// add expenses as transactions
 	var expenses []db.MonthlyExpense = db.GetAllMonthlyExpensesStructs()
 	for i := 0; i < len(expenses); i++ {
-		db.AddTransaction(&db.Transaction{Amount: -expenses[i].Amount, Date: time.Now().AddDate(0, 0, -1), Description: fmt.Sprintf("(Expenses) $%v %v monthly payment", expenses[i].Amount, expenses[i].Name)})
+		db.AddTransaction(&db.Transaction{Amount: -expenses[i].Amount, Date: utils.CurrentTime().AddDate(0, 0, -1), Description: fmt.Sprintf("(Expenses) $%v %v monthly payment", expenses[i].Amount, expenses[i].Name)})
 	}
 
 	// The emergency fund takes half of the netTransaction change if it is positive.
 	var amountToAddToEmergency float32 = 0.0
-	savings := db.GetSavingsPerMonth()
+	amountToSave := db.GetSavingsPerMonth()
 	estimatedSpendingMoney := db.GetEstimatedSpendingMoney()
-	if savings >= estimatedSpendingMoney {
+	if amountToSave >= estimatedSpendingMoney {
 		// only assigning savings to this to calculate how much
 		// to add to emergency fund later. This makes it so emergency fund will
 		// not take more than we are estimated to have
-		savings = estimatedSpendingMoney
+		amountToSave = estimatedSpendingMoney
 	}
 
 	// this is adding transactions for the last day of last month, so tell people what they should add to their savings,
 	// but that value is actually from last month
-	difference := emergencyMax - emergencyAmount
+	amountToFillEmergencyFund := emergencyMax - emergencyAmount
 	// if emergency is full
-	if difference <= 0 {
+	if amountToFillEmergencyFund <= 0 {
 		// add full savings amount to savings
-		db.SetAmountToSaveThisMonth(float32(math.Max(float64(savings), 0.0)))
-		if savings > 0 {
-			db.AddTransaction(&db.Transaction{Amount: -savings, Date: time.Now().AddDate(0, 0, -1), Description: fmt.Sprintf("Savings: $%v monthly contribution", savings)})
+		db.SetAmountToSaveThisMonth(float32(math.Max(float64(amountToSave), 0.0)))
+		if amountToSave > 0 {
+			db.AddTransaction(&db.Transaction{Amount: -amountToSave, Date: utils.CurrentTime().AddDate(0, 0, -1), Description: fmt.Sprintf("Savings: $%v monthly contribution", amountToSave)})
 		}
 	} else { // else if the emergency is not full
-		amountLeftOver := savings - difference
 		// if the savings amount fully covers filling the emergency fund
-		if amountLeftOver > 0 {
+		if amountToSave > amountToFillEmergencyFund {
 			// the difference (amount needed to fill fund) is added to emergencyFund
-			amountToAddToEmergency += difference
-			amountToSaveThisMonth := savings - difference
+			amountToAddToEmergency += amountToFillEmergencyFund
+			amountToSaveThisMonth := amountToSave - amountToFillEmergencyFund
 			// used to show the user how much to add to savings account that month
 			db.SetAmountToSaveThisMonth(amountToSaveThisMonth)
-			if savings > 0 {
+			if amountToSave > 0 {
 				// the difference is removed from the amount added to savings
-				db.AddTransaction(&db.Transaction{Amount: -savings, Date: time.Now().AddDate(0, 0, -1), Description: fmt.Sprintf("Savings: $%v monthly contribution", amountToSaveThisMonth)})
+				db.AddTransaction(&db.Transaction{Amount: -amountToSave, Date: utils.CurrentTime().AddDate(0, 0, -1), Description: fmt.Sprintf("Savings: $%v monthly contribution", amountToSaveThisMonth)})
+				amountToSave = 0.0
 			}
-		} else {
-			amountToAddToEmergency += savings
+		} else { // add whatever you can to emergency without saving
+			amountToAddToEmergency += amountToSave
 			// nothing is added to savings
 			db.SetAmountToSaveThisMonth(0)
 		}
@@ -218,7 +228,7 @@ func calculateNetTransactionChange() float32 {
 
 	// get the first of last month
 	var firstOfLastMonth time.Time
-	today := time.Now()
+	today := utils.CurrentTime()
 	if !isTesting {
 		if today.Day() != 1 {
 			log.Fatal("The monthly task was ran on a day other than the 1st. Please fix this!")
