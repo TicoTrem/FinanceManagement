@@ -91,6 +91,7 @@ func createTables() {
 	estimatedIncome FLOAT(16,2) DEFAULT 0.0,
     emergencyMax float(16,2) DEFAULT 0.0,
     emergencyAmount float(16,2) DEFAULT 0.0,
+	emergencyFillFactor float(16, 2) DEFAULT 0.5,
 	savingsPerMonth float(16,2) DEFAULT 0.0,
 	amountToSaveThisMonth float(16,2) DEFAULT 0.0);`)
 	if err != nil {
@@ -128,7 +129,7 @@ func MonthlyTask() {
 	// contribute to emergency fund
 	if emergencyAmount < emergencyMax && netTransactionChange > 0 {
 		// creates a transaction, lowering the estimated spending money by adding a transaction
-		amountToIncrease := netTransactionChange / 2
+		amountToIncrease := netTransactionChange * db.GetEmergencyFillFactor()
 		difference := emergencyMax - emergencyAmount
 		if amountToIncrease > difference {
 			// only increase the difference
@@ -175,7 +176,7 @@ func addMonthlyTransactions(emergencyAmount float32, emergencyMax float32) {
 		// add full savings amount to savings
 		db.SetAmountToSaveThisMonth(float32(math.Max(float64(amountToSave), 0.0)))
 		if amountToSave > 0 {
-			db.AddTransaction(&db.Transaction{Amount: -amountToSave, Date: utils.CurrentTime().AddDate(0, 0, -1), Description: fmt.Sprintf("Savings: $%v monthly contribution", amountToSave)})
+			db.AddTransaction(&db.Transaction{Amount: -amountToSave, Date: utils.CurrentTime().AddDate(0, 0, -1), Description: fmt.Sprintf("(Savings) $%v monthly contribution", amountToSave)})
 		}
 	} else { // else if the emergency is not full
 		// if the savings amount fully covers filling the emergency fund
@@ -187,7 +188,7 @@ func addMonthlyTransactions(emergencyAmount float32, emergencyMax float32) {
 			db.SetAmountToSaveThisMonth(amountToSaveThisMonth)
 			if amountToSave > 0 {
 				// the difference is removed from the amount added to savings
-				db.AddTransaction(&db.Transaction{Amount: -amountToSave, Date: utils.CurrentTime().AddDate(0, 0, -1), Description: fmt.Sprintf("Savings: $%v monthly contribution", amountToSaveThisMonth)})
+				db.AddTransaction(&db.Transaction{Amount: -amountToSave, Date: utils.CurrentTime().AddDate(0, 0, -1), Description: fmt.Sprintf("(Savings) $%v monthly contribution", amountToSaveThisMonth)})
 				amountToSave = 0.0
 			}
 		} else { // add whatever you can to emergency without saving
@@ -196,9 +197,8 @@ func addMonthlyTransactions(emergencyAmount float32, emergencyMax float32) {
 			db.SetAmountToSaveThisMonth(0)
 		}
 	}
+	// fill emergency fund before savings
 	db.IncreaseEmergencyFund(amountToAddToEmergency)
-	// update the max amount allowed in emergency fund (dynamic)
-	db.UpdateMaxEmergencyFund()
 
 	// add goals as transactions
 	// this happens after everything else because it is of least priority

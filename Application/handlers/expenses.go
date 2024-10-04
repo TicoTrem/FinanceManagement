@@ -2,9 +2,10 @@ package handlers
 
 import (
 	"fmt"
+	"math"
+
 	"github.com/ticotrem/finance/shared/db"
 	"github.com/ticotrem/finance/shared/utils"
-	"math"
 )
 
 var selectedExpense db.MonthlyExpense
@@ -27,7 +28,7 @@ func HandleViewAndEditMonthlyExpenses() {
 }
 
 func editMonthlyExpense() {
-	options := []string{"Chance the name", "Change the amount", "Delete the expense"}
+	options := []string{"Change the name", "Change the amount", "Delete the expense"}
 	methods := []func(){handleChangeExpenseName, handleChangeExpenseMonthlyAmount, handleDeleteExpense}
 	utils.PromptAndHandle("You have selected %v. Please select an option:", options, methods)
 }
@@ -88,6 +89,7 @@ func handleAddNewMonthlyExpense() {
 
 	// values should always be positive, they are assumed to be a negative transaction
 	parsedFloat = float32(math.Abs(float64(parsedFloat)))
+	expense.Amount = parsedFloat
 
 	db.AddMonthlyExpense(expense)
 	// next month it will automatically calculate this, but for this month we just

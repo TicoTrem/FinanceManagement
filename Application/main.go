@@ -16,7 +16,6 @@ func main() {
 	shared.SetupDatabase()
 
 	// TODO: how can I make sure the service is currently running?
-	_, emergencyAmount := db.GetEmergencyData()
 
 	options := []string{"Add a transaction", "Display and edit all transactions", "View and edit monthly expenses",
 		"View and edit goals", "Manage your emergency fund", "Manage your savings",
@@ -26,6 +25,7 @@ func main() {
 		handlers.HandleChangeExpectedIncome, shared.MonthlyTask}
 
 	for {
+		emergencyAmount, _ := db.GetEmergencyData()
 		utils.PromptAndHandle("Welcome to Finance!\nSpending money is: %v\nYour emergency fund should be at: $%v\n"+
 			"You should add $%v to your savings account for last month\nWhat would you like to do?", options, methods,
 			utils.GetMoneyString(db.GetEstimatedSpendingMoney()), emergencyAmount, db.GetAmountToSaveThisMonth())

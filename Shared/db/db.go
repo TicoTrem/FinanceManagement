@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"log"
+	"math"
 
 	"github.com/ticotrem/finance/shared/utils"
 )
@@ -60,7 +61,7 @@ func SetSpendingMoney(spendingMoney float32) {
 
 }
 
-func GetEmergencyData() (max float32, amount float32) {
+func GetEmergencyData() (amount float32, max float32) {
 	row := Database.QueryRow("SELECT emergencyMax, emergencyAmount FROM Variables")
 	var emergencyMax float32
 	var emergencyAmount float32
@@ -71,7 +72,6 @@ func GetEmergencyData() (max float32, amount float32) {
 	return emergencyAmount, emergencyMax
 }
 
-// used in different module so its grayed out
 func IncreaseEmergencyFund(amount float32) {
 	if amount <= 0 {
 		return
@@ -90,14 +90,32 @@ func IncreaseEmergencyFund(amount float32) {
 // how much to put inside this account to calculate 6 months worth of expenses, and have
 // the emergency fund cover that.
 
-func UpdateMaxEmergencyFund() {
+func SetMaxEmergencyFund(maxAmount float32) {
 	// Make sure the resulting number is positive
-	maxAmount := -(GetMonthlyExpenses() * 6)
+	maxAmount = float32(math.Abs(float64(maxAmount)))
 	// will change for all rows because no 'where' clause, but there is only a single row
 	_, err := Database.Exec("UPDATE Variables SET emergencyMax = ?;", maxAmount)
 	if err != nil {
 		log.Fatal("Error updating max emergency amount in Variables table: " + err.Error())
 	}
+}
+
+func SetEmergencyFillFactor(fillFactor float32) {
+	fillFactor = float32(math.Abs(float64(fillFactor)))
+	_, err := Database.Exec("UPDATE Variables SET emergencyFillFactor = ?;", fillFactor)
+	if err != nil {
+		log.Fatal("Error updating emergencyFillFactor in Variables table: " + err.Error())
+	}
+}
+
+func GetEmergencyFillFactor() float32 {
+	row := Database.QueryRow("SELECT emergencyFillFactor FROM Variables")
+	var emergencyFillFactor float32
+	err := row.Scan(&emergencyFillFactor)
+	if err != nil {
+		log.Fatal("Failed to get emergencyFillFactor from Variables table: " + err.Error())
+	}
+	return emergencyFillFactor
 }
 
 func SpendEmergencyFund(amount float32) (enough bool) {
@@ -141,7 +159,7 @@ func GetAmountToSaveThisMonth() float32 {
 }
 
 func SetAmountToSaveThisMonth(amountToSaveThisMonth float32) {
-	_, err := Database.Exec("UPDATE Variables SET amountToSaveThisMonth ?;", amountToSaveThisMonth)
+	_, err := Database.Exec("UPDATE Variables SET amountToSaveThisMonth = ?;", amountToSaveThisMonth)
 	if err != nil {
 		log.Fatal("Failed to update amountToSaveThisMonth variable in database: " + err.Error())
 	}

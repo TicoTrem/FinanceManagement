@@ -25,7 +25,6 @@ func GetUserResponse(prompt string, formatVariables ...any) (response string, ex
 
 	if err != nil {
 		log.Fatal("Error reading input:", err)
-		return
 	}
 	if userResponse == "exit" {
 		return userResponse, true
