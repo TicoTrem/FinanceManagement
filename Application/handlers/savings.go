@@ -7,7 +7,7 @@ import (
 )
 
 func HandleSavings() {
-	fmt.Printf("Welcome to savings!\nYour current monthly contribution is: %v\n What would you like to do?\n1)Change amount saved per month", db.GetSavingsPerMonth())
+	fmt.Printf("Welcome to savings!\nYour amount to contribute this month is: %v\nWhat would you like to do?\n1)Change amount saved per month", db.GetSavingsPerMonth())
 	for {
 		response, exit := utils.GetUserResponse("")
 		if exit {

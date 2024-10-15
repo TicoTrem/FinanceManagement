@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"log"
+	"time"
 )
 
 var Database *sql.DB
@@ -73,7 +74,7 @@ func GetEmergencyData() (max float32, amount float32) {
 func IncreaseEmergencyFund(amount float32) {
 	emergencyAmount, _ := GetEmergencyData()
 	// make adding to this a transaction, lowering spending money
-	AddTransaction(&Transaction{Amount: amount, Description: "Emergency Fund: Refill fund"})
+	AddTransaction(&Transaction{Amount: -amount, Date: time.Now().AddDate(0, 0, -1), Description: "Emergency Fund: Refill fund"})
 	_, err := Database.Exec("UPDATE Variables SET emergencyAmount = ?;", emergencyAmount+amount)
 	if err != nil {
 		log.Fatal("Error updating emergency values into variables table:" + err.Error())
@@ -85,7 +86,8 @@ func IncreaseEmergencyFund(amount float32) {
 // how much to put inside this account to calculate 6 months worth of expenses, and have
 // the emergency fund cover that.
 func UpdateMaxEmergencyFund() {
-	maxAmount := GetMonthlyExpenses() * 6
+	// Make sure the resulting number is positive
+	maxAmount := -(GetMonthlyExpenses() * 6)
 	// will change for all rows because no 'where' clause, but there is only a single row
 	_, err := Database.Exec("UPDATE Variables SET emergencyMax = ?;", maxAmount)
 	if err != nil {

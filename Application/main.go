@@ -24,7 +24,7 @@ func main() {
 		response, exit := utils.GetUserResponse(`Welcome to Finance!
 		Spending money is: $%v
 		Your emergency fund should be at: $%v
-		You should add $%v to your savings account this month
+		You should add $%v to your savings account for last month
 		What would you like to do?
 				1) Add a transaction
 				2) Display and edit all transactions

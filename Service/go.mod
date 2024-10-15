@@ -1,4 +1,4 @@
-module Service
+module github.com/ticotrem/finance/service
 
 go 1.22.3
 

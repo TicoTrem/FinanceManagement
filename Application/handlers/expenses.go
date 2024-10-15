@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"github.com/ticotrem/finance/shared/db"
+	"math"
 	"strconv"
 	"time"
 
@@ -105,6 +106,9 @@ func handleAddNewMonthlyExpense() {
 			fmt.Println("Invalid input")
 			continue
 		}
+		// values should always be positive, they are assumed to be a negative transaction
+		parsedFloat = math.Abs(parsedFloat)
+
 		expense.Amount = float32(parsedFloat)
 		break
 	}
@@ -112,14 +116,15 @@ func handleAddNewMonthlyExpense() {
 	db.AddMonthlyExpense(expense)
 	// next month it will automatically calculate this, but for this month we just
 	// adjust the estimated spending money
-	db.SetEstimatedSpendingMoney(db.GetEstimatedSpendingMoney() + expense.Amount)
+	db.SetEstimatedSpendingMoney(db.GetEstimatedSpendingMoney() - expense.Amount)
 
 }
 
 func HandleViewAndEditGoal() {
 	monthlyGoals := db.GetAllGoalStructs()
+	fmt.Println("Your amount per month will be deducted from your estimated spending money, if the estimated spending money cannot support that amount, it will split the amount you do have among all goals")
 	for i := 0; i < len(monthlyGoals); i++ {
-		fmt.Printf("%v:\tName: %v\tAmount: %v/%v\tAmount per month: $%.2f\tMonths left: %v\n", i+1, monthlyGoals[i].Name, monthlyGoals[i].AmountSaved, monthlyGoals[i].Amount, monthlyGoals[i].AmountPerMonth, monthlyGoals[i].GetMonthsToComplete())
+		fmt.Printf("%v:\tName: %v\tAmount: %v/%v\tAmount per month: $%.2f\tMonths left: %v\n", i+1, monthlyGoals[i].Name, monthlyGoals[i].AmountSaved, monthlyGoals[i].Amount, monthlyGoals[i].AmountPerMonth, monthlyGoals[i].MonthsLeft)
 	}
 	response, createNew, exit := utils.CreateNewOrInt("Enter the number of the goal you would like to manage, or 'c' to create a new one", 1, len(monthlyGoals))
 	if exit {
@@ -149,7 +154,7 @@ func handleAddNewGoal() {
 	for {
 		response, exit := utils.GetUserResponse(`How would you like to create this goal?
 							1) Set an amount you can afford per month
-							2) Set a date you would like the goal met by`)
+							2) Set an amount of months you would like the goal met by`)
 		if exit {
 			return
 		}
@@ -164,7 +169,7 @@ func handleAddNewGoal() {
 				break
 			}
 		case "2":
-			goal.DateComplete, exit = getDateFromUser()
+			goal.MonthsLeft, exit = utils.GetUserResponseInt("In how many months would you like the goal complete?")
 			if exit {
 				return
 			}
@@ -175,7 +180,7 @@ func handleAddNewGoal() {
 		break
 	}
 	db.AddGoal(&goal)
-	fmt.Printf("Your goal was successfully created, you will save $%v per month for %v months", goal.AmountPerMonth, goal.GetMonthsToComplete())
+	fmt.Printf("Your goal was successfully created, you will save $%v per month for %v months", goal.AmountPerMonth, goal.MonthsLeft)
 
 }
 
@@ -255,7 +260,7 @@ func editGoal(goal db.Goal) {
 			break
 		}
 		goal.UpdateGoalAmount(response, changeMonthlyPayments)
-		fmt.Printf("Successfully updated goal.\nMontly payments: $%v\nMonthly payments left: %v", goal.AmountPerMonth, goal.GetMonthsToComplete())
+		fmt.Printf("Successfully updated goal.\nMontly payments: $%v\nMonthly payments left: %v", goal.AmountPerMonth, goal.MonthsLeft)
 	case "3":
 		date, exit := getDateFromUser()
 		if exit {
@@ -268,7 +273,7 @@ func editGoal(goal db.Goal) {
 			return
 		}
 		goal.UpdateGoalMonthly(response)
-		fmt.Printf("Your goal is now set to be completed in %v months\n", goal.GetMonthsToComplete())
+		fmt.Printf("Your goal is now set to be completed in %v months\n", goal.MonthsLeft)
 
 	}
 }

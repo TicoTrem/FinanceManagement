@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/ticotrem/finance/shared/db"
 	"sync"
 	"time"
 
