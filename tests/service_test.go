@@ -10,7 +10,7 @@ import (
 
 func TestCreateTables(t *testing.T) {
 
-	dbase, err := sql.Open("mysql", "root:password@/FinanceTesting")
+	dbase, err := sql.Open("mysql", "root:root@/FinanceTesting")
 	if err != nil {
 		log.Fatal("Failed to open connection to database")
 	}

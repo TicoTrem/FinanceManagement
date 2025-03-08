@@ -36,7 +36,7 @@ func SetupDatabase() {
 	dbase.Close()
 
 	// Create the database object for real
-	db.Database, err = sql.Open("mysql", "root:password@/Finance")
+	db.Database, err = sql.Open("mysql", "root:root@/Finance")
 	if err != nil {
 		log.Fatal(err)
 	}
