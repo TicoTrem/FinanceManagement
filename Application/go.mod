@@ -2,7 +2,7 @@ module github.com/ticotrem/finance
 
 go 1.22.3
 
-replace github.com/ticotrem/finance/shared => ../shared
+replace github.com/ticotrem/finance/shared => ../Shared
 
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
