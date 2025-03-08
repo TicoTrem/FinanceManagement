@@ -16,7 +16,7 @@ var isTesting bool = true
 // This function will setup the database and create the tables if they don't exist
 func SetupDatabase() {
 
-	dbase, err := sql.Open("mysql", "root:@/")
+	dbase, err := sql.Open("mysql", "root:root@/")
 	if err != nil {
 		log.Fatal(err)
 	}
