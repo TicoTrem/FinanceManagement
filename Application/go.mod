@@ -1,6 +1,6 @@
 module github.com/ticotrem/finance
 
-go 1.22.3
+go 1.23
 
 replace github.com/ticotrem/finance/shared => ../Shared
 
