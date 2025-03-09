@@ -24,8 +24,9 @@ func AddTransaction(transaction *Transaction) {
 func (transaction *Transaction) Delete() {
 	_, err := Database.Exec("DELETE FROM Transactions WHERE id = ?;", transaction.Id)
 	if err != nil {
-		log.Fatal("Error deleting transaction in the Database" + err.Error())
+		log.Fatal("Error deleting transaction %v in the Database"+err.Error(), transaction.Id)
 	}
+	SetEstimatedSpendingMoney(GetEstimatedSpendingMoney() - transaction.Amount)
 	fmt.Println("Your transaction has successfully been deleted from the Database!")
 	*transaction = Transaction{} // make it zero value since it is now deleted from Database
 }
