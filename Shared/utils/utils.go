@@ -142,7 +142,7 @@ func SelectRecordOrCreate[T any](records []T, createNewFunc func()) (recPtr *T, 
 
 		pInt, createNew, exit := CreateNewOrInt("Enter the number of the record you would like to edit, or 'c' to create a new one", 1, len(records))
 		if exit {
-			return nil, false
+			return nil, true
 		}
 		// record was selected
 		if pInt != -1 {
