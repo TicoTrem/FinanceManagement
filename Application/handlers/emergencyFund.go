@@ -21,7 +21,10 @@ func HandleEmergencyFund() {
 		"If your emergency fund is not full, half your new monthly spending money will "+
 		"go towards it until filled.\n", utils.GetMoneyString(emergencyAmount), utils.GetMoneyString(emergencyMax), db.GetEmergencyFillFactor())
 
-	utils.PromptAndHandle("What would you like to do?", []string{"Spend Emergency Fund", "Update Target Emergency Fund size", "Manually set amount in Emergency Fund", "Change what amount of spending money fills Emergency Fund instead"}, []func(){handleSpendEmergencyFund, handleUpdateMaxEmergencyFund, handleSetEmergencyAmount, handleUpdateFillFactor})
+	var exit bool = false
+	for !exit {
+		exit = utils.PromptAndHandle("What would you like to do?", []string{"Spend Emergency Fund", "Update Target Emergency Fund size", "Manually set amount in Emergency Fund", "Change what amount of spending money fills Emergency Fund instead"}, []func(){handleSpendEmergencyFund, handleUpdateMaxEmergencyFund, handleSetEmergencyAmount, handleUpdateFillFactor})
+	}
 }
 
 func handleSpendEmergencyFund() {

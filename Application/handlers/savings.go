@@ -9,7 +9,10 @@ import (
 
 func HandleSavings() {
 	fmt.Printf("Welcome to savings!\nYour amount to contribute this month is: %v\n", utils.GetMoneyString(db.GetSavingsPerMonth()))
-	utils.PromptAndHandle("What would you like to do?", []string{"Change amount saved per month", "Send some spending money to savings"}, []func(){handleChangeMonthlySavings, handleAddExtraSavings})
+	var exit bool = false
+	for !exit {
+		exit = utils.PromptAndHandle("What would you like to do?", []string{"Change amount saved per month", "Send some spending money to savings"}, []func(){handleChangeMonthlySavings, handleAddExtraSavings})
+	}
 }
 
 func handleChangeMonthlySavings() {

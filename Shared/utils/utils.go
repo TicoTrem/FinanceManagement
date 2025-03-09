@@ -164,37 +164,34 @@ func SelectRecordOrCreate[T any](records []T, createNewFunc func()) (recPtr *T, 
 // that correspond to the positions of the method they will call in methodsToCall. If the user answers 'c'
 // the createNewFunc will be called to handle creating a new record. If you do not need the option to create
 // a new record, just pass in 'nil' to that parameter. functions are just pointers so this will not cause errors
-func PromptAndHandle(prompt string, options []string, methodsToCall []func(), formatVariables ...any) {
+func PromptAndHandle(prompt string, options []string, methodsToCall []func(), formatVariables ...any) (exit bool) {
 	prompt += "\n"
 	for i := 0; i < len(options); i++ {
 		prompt += fmt.Sprintf("\t%v)\t%v\n", i+1, options[i])
 	}
-	for {
-		if formatVariables != nil {
-			fmt.Printf(prompt, formatVariables...)
-		} else {
-			fmt.Printf(prompt)
-		}
-
-		reader := bufio.NewReader(os.Stdin)
-		userResponse, err := reader.ReadString('\n')
-		if err != nil {
-			log.Fatal("Error reading input:", err)
-			return
-		}
-		userResponse = strings.TrimSpace(userResponse)
-		if userResponse == "" {
-			return
-		}
-		pInt, err := strconv.Atoi(userResponse)
-		if err != nil || pInt < 1 || pInt > len(options) {
-			fmt.Println("Invalid Input\n")
-			continue
-		}
-
-		// call the corresponding method based on its type
-		methodsToCall[pInt-1]()
+	if formatVariables != nil {
+		fmt.Printf(prompt, formatVariables...)
+	} else {
+		fmt.Print(prompt)
 	}
+
+	reader := bufio.NewReader(os.Stdin)
+	userResponse, err := reader.ReadString('\n')
+	if err != nil {
+		log.Fatal("Error reading input:", err)
+	}
+	userResponse = strings.TrimSpace(userResponse)
+	if userResponse == "" {
+		return true
+	}
+	pInt, err := strconv.Atoi(userResponse)
+	if err != nil || pInt < 1 || pInt > len(options) {
+		fmt.Print("Invalid Input\n\n")
+	}
+
+	// call the corresponding method based on its type
+	methodsToCall[pInt-1]()
+	return false
 }
 
 func CreateNewOrInt(prompt string, minimum int, maximum int, formatVariables ...any) (response int, createNew bool, exit bool) {

@@ -35,7 +35,10 @@ func HandleViewAndEditMonthlyExpenses() {
 func editMonthlyExpense() {
 	options := []string{"Change the name", "Change the amount", "Delete the expense"}
 	methods := []func(){handleChangeExpenseName, handleChangeExpenseMonthlyAmount, handleDeleteExpense}
-	utils.PromptAndHandle("You have selected %v. Please select an option:", options, methods)
+	var exit bool = false
+	for !exit {
+		exit = utils.PromptAndHandle("You have selected %v. Please select an option:", options, methods)
+	}
 }
 
 func handleChangeExpenseName() {
@@ -75,7 +78,10 @@ func handleDeleteExpense() {
 		},
 	}
 
-	utils.PromptAndHandle("Was the payment made already this month?", []string{"Yes", "No"}, methods)
+	var exit bool = false
+	for !exit {
+		exit = utils.PromptAndHandle("Was the payment made already this month?", []string{"Yes", "No"}, methods)
+	}
 
 	selectedExpense.Delete()
 }

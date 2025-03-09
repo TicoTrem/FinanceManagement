@@ -57,7 +57,10 @@ func HandleDisplayEditTransactions() {
 
 		options := []string{"Edit the transaction value", "Delete the transaction"}
 		functions := []func(){handleEditTransaction, selectedTransaction.Delete}
-		utils.PromptAndHandle("Transaction %v:\\tAmount: %v\\t Date: %v\\t was selected.\\nWould you like to:", options, functions, parsedInt, selectedTransaction.Amount, selectedTransaction.Date)
+		exit = false
+		for !exit {
+			exit = utils.PromptAndHandle("Transaction %v:\\tAmount: %v\\t Date: %v\\t was selected.\\nWould you like to:", options, functions, parsedInt, selectedTransaction.Amount, selectedTransaction.Date)
+		}
 	}
 
 }

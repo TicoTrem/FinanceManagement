@@ -26,9 +26,13 @@ func main() {
 
 	for {
 		emergencyAmount, _ := db.GetEmergencyData()
-		utils.PromptAndHandle("Welcome to Finance!\nSpending money is: %v\nYour emergency fund should be at: $%v\n"+
-			"You should add $%v to your savings account for last month\nWhat would you like to do?", options, methods,
-			utils.GetMoneyString(db.GetEstimatedSpendingMoney()), emergencyAmount, db.GetAmountToSaveThisMonth())
+		var exit bool = false
+		for !exit {
+			exit = utils.PromptAndHandle("Welcome to Finance!\nSpending money is: %v\nYour emergency fund should be at: $%v\n"+
+				"You should add $%v to your savings account for last month\nWhat would you like to do?", options, methods,
+				utils.GetMoneyString(db.GetEstimatedSpendingMoney()), emergencyAmount, db.GetAmountToSaveThisMonth())
+		}
+
 	}
 
 }
