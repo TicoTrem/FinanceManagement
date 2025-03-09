@@ -11,18 +11,23 @@ import (
 var selectedExpense db.MonthlyExpense
 
 func HandleViewAndEditMonthlyExpenses() {
-	var monthlyExpenses []db.MonthlyExpense = db.GetAllMonthlyExpensesStructs()
+	for {
+		var monthlyExpenses []db.MonthlyExpense = db.GetAllMonthlyExpensesStructs()
 
-	optionStrings := []string{}
-	for name, amount := range monthlyExpenses {
-		optionStrings = append(optionStrings, fmt.Sprintf("Name: %v\tAmount: %v", name, amount))
-	}
-	var selectedExpensePtr *db.MonthlyExpense = utils.SelectRecordOrCreate(monthlyExpenses, handleAddNewMonthlyExpense)
+		optionStrings := []string{}
+		for name, amount := range monthlyExpenses {
+			optionStrings = append(optionStrings, fmt.Sprintf("Name: %v\tAmount: %v", name, amount))
+		}
+		var selectedExpensePtr, exit = utils.SelectRecordOrCreate(monthlyExpenses, handleAddNewMonthlyExpense)
+		if exit {
+			return
+		}
 
-	// if the above method call wasnt exited or created new record
-	if selectedExpensePtr != nil {
-		selectedExpense = *selectedExpensePtr
-		editMonthlyExpense()
+		// if the above method call wasnt exited or created new record
+		if selectedExpensePtr != nil {
+			selectedExpense = *selectedExpensePtr
+			editMonthlyExpense()
+		}
 	}
 
 }
@@ -43,7 +48,7 @@ func handleChangeExpenseName() {
 }
 
 func handleChangeExpenseMonthlyAmount() {
-	parsedFloat, exit := utils.GetUserResponseFloat("Please enter the new monthly amount for this expense: ")
+	parsedFloat, exit := utils.GetUserResponseFloat("Please enter the new monthly amount for this expense: ", utils.Positive)
 	if exit {
 		return
 	}
@@ -82,7 +87,7 @@ func handleAddNewMonthlyExpense() {
 	if exit {
 		return
 	}
-	parsedFloat, exit := utils.GetUserResponseFloat("Please enter the monthly amount for the new expense: ")
+	parsedFloat, exit := utils.GetUserResponseFloat("Please enter the monthly amount for the new expense: ", utils.Positive)
 	if exit {
 		return
 	}
@@ -95,24 +100,24 @@ func handleAddNewMonthlyExpense() {
 	// next month it will automatically calculate this, but for this month we just
 	// adjust the estimated spending money
 	db.SetEstimatedSpendingMoney(db.GetEstimatedSpendingMoney() - expense.Amount)
-
 }
 
 func HandleViewAndEditGoal() {
-	monthlyGoals := db.GetAllGoalStructs()
-	fmt.Println("Your amount per month will be deducted from your estimated spending money, if the estimated spending money cannot support that amount, it will split the amount you do have among all goals")
-	for i := 0; i < len(monthlyGoals); i++ {
-		fmt.Printf("%v:\tName: %v\tAmount: %v/%v\tAmount per month: $%.2f\tMonths left: %v\n", i+1, monthlyGoals[i].Name, monthlyGoals[i].AmountSaved, monthlyGoals[i].Amount, monthlyGoals[i].AmountPerMonth, monthlyGoals[i].MonthsLeft)
+	for {
+		monthlyGoals := db.GetAllGoalStructs()
+		fmt.Println("Your amount per month will be deducted from your estimated spending money, if the estimated spending money cannot support that amount, it will split the amount you do have among all goals")
+		for i := 0; i < len(monthlyGoals); i++ {
+			fmt.Printf("%v:\tName: %v\tAmount: %v/%v\tAmount per month: %v\tMonths left: %v\n", i+1, monthlyGoals[i].Name, utils.GetMoneyString(monthlyGoals[i].AmountSaved), utils.GetMoneyString(monthlyGoals[i].Amount), utils.GetMoneyString(monthlyGoals[i].AmountPerMonth), monthlyGoals[i].MonthsLeft)
+		}
+		response, createNew, exit := utils.CreateNewOrInt("Enter the number of the goal you would like to manage, or 'c' to create a new one", 1, len(monthlyGoals))
+		if exit {
+			return
+		} else if createNew {
+			handleAddNewGoal()
+		} else {
+			manageGoal(monthlyGoals[response-1])
+		}
 	}
-	response, createNew, exit := utils.CreateNewOrInt("Enter the number of the goal you would like to manage, or 'c' to create a new one", 1, len(monthlyGoals))
-	if exit {
-		return
-	} else if createNew {
-		handleAddNewGoal()
-	} else {
-		manageGoal(monthlyGoals[response-1])
-	}
-
 }
 
 // have two types of goals. Goals you set a date and it tells you how much money to put towards it per month
@@ -124,7 +129,7 @@ func handleAddNewGoal() {
 	if exit {
 		return
 	}
-	goal.Amount, exit = utils.GetUserResponseFloat("How much must be saved to complete this goal?")
+	goal.Amount, exit = utils.GetUserResponseFloat("How much must be saved to complete this goal?", utils.Positive)
 	if exit {
 		return
 	}
@@ -139,7 +144,7 @@ func handleAddNewGoal() {
 		switch response {
 		case "1":
 			for {
-				goal.AmountPerMonth, exit = utils.GetUserResponseFloat("What is the amount you can afford per month?")
+				goal.AmountPerMonth, exit = utils.GetUserResponseFloat("What is the amount you can afford per month?", utils.Positive)
 				if exit {
 					return
 				}
@@ -147,7 +152,7 @@ func handleAddNewGoal() {
 				break
 			}
 		case "2":
-			goal.MonthsLeft, exit = utils.GetUserResponseInt("In how many months would you like the goal complete?")
+			goal.MonthsLeft, exit = utils.GetUserResponseInt("In how many months would you like the goal complete?", utils.Positive)
 			if exit {
 				return
 			}
@@ -218,7 +223,7 @@ func editGoal(goal db.Goal) {
 		goal.UpdateGoalName(response)
 	case "2":
 		var changeMonthlyPayments bool
-		response, exit := utils.GetUserResponseFloat("What would you like the new goal amount to be?")
+		response, exit := utils.GetUserResponseFloat("What would you like the new goal amount to be?", utils.Positive)
 		if exit {
 			return
 		}
@@ -240,14 +245,14 @@ func editGoal(goal db.Goal) {
 		goal.UpdateGoalAmount(response, changeMonthlyPayments)
 		fmt.Printf("Successfully updated goal.\nMontly payments: $%v\nMonthly payments left: %v", goal.AmountPerMonth, goal.MonthsLeft)
 	case "3":
-		months, exit := utils.GetUserResponseInt("How many months from now would you like the goal complete instead?")
+		months, exit := utils.GetUserResponseInt("How many months from now would you like the goal complete instead?", utils.Positive)
 		if exit {
 			return
 		}
 		goal.UpdateMonthsLeft(months)
 		fmt.Printf("Your monthly contribution will now be %v to achieve your goal in %v months", goal.AmountPerMonth, goal.MonthsLeft)
 	case "4":
-		response, exit := utils.GetUserResponseFloat("What would you like the new monthly payment to be?")
+		response, exit := utils.GetUserResponseFloat("What would you like the new monthly payment to be?", utils.Positive)
 		if exit {
 			return
 		}
@@ -258,7 +263,7 @@ func editGoal(goal db.Goal) {
 }
 
 func contributeToGoal(goal db.Goal) {
-	response, exit := utils.GetUserResponseFloat("How much would you like to contribute to the goal? (This will be deducted from your spending money)")
+	response, exit := utils.GetUserResponseFloat("How much would you like to contribute to the goal? (This will be deducted from your spending money)", utils.Positive)
 	if exit {
 		return
 	}
