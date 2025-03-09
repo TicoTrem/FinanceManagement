@@ -26,90 +26,138 @@ func GetUserResponse(prompt string, formatVariables ...any) (response string, ex
 	if err != nil {
 		log.Fatal("Error reading input:", err)
 	}
-	if userResponse == "exit" {
+	if userResponse == "" {
 		return userResponse, true
 	}
 	return userResponse, false
 }
 
+// NumberConstraint defines the type of number constraint to apply
+type NumberConstraint int
+
+const (
+	// Any allows any number
+	Any NumberConstraint = iota
+	// Positive enforces numbers greater than zero
+	Positive
+	// Negative enforces numbers less than zero
+	Negative
+)
+
 // the extra bool on top of GetUserResponse that this returns is meant to tell the
 // caller if the parsing was successful
-func GetUserResponseFloat(prompt string, formatVariables ...any) (parsedFloat float32, exit bool) {
+func GetUserResponseFloat(prompt string, constraint NumberConstraint, formatVariables ...any) (parsedFloat float32, exit bool) {
 	for {
 		response, exit := GetUserResponse(prompt, formatVariables...)
+		if exit {
+			return 0, true
+		}
 		pFloat, err := strconv.ParseFloat(response, 32)
 		if err != nil {
 			fmt.Println("Invalid Input")
 			continue
 		}
+
+		// Check number constraints
+		switch constraint {
+		case Positive:
+			if pFloat <= 0 {
+				fmt.Println("Please enter a positive number")
+				continue
+			}
+		case Negative:
+			if pFloat >= 0 {
+				fmt.Println("Please enter a negative number")
+				continue
+			}
+		}
+
 		return float32(pFloat), exit
 	}
 }
 
-func GetUserResponseInt(prompt string, formatVariables ...any) (parsedInt int, exit bool) {
+func GetUserResponseInt(prompt string, constraint NumberConstraint, formatVariables ...any) (parsedInt int, exit bool) {
 	for {
 		response, exit := GetUserResponse(prompt, formatVariables...)
+		if exit {
+			return 0, true
+		}
 		pInt, err := strconv.Atoi(response)
-		if err != nil || pInt < 0 {
+		if err != nil {
 			fmt.Println("Invalid Input")
 			continue
 		}
+
+		// Check number constraints
+		switch constraint {
+		case Positive:
+			if pInt <= 0 {
+				fmt.Println("Please enter a positive number")
+				continue
+			}
+		case Negative:
+			if pInt >= 0 {
+				fmt.Println("Please enter a negative number")
+				continue
+			}
+		}
+
 		return pInt, exit
 	}
 }
 
 // prints out records of any type of struct
-func SelectRecordOrCreate[T any](records []T, createNewFunc func()) *T {
-	// get the value of the first struct
+func SelectRecordOrCreate[T any](records []T, createNewFunc func()) (recPtr *T, exit bool) {
 
-	// print all of the records
-	for i := 0; i < len(records); i++ {
-		// the reflect value of the record we are looking at
-		value := reflect.ValueOf(records[i])
+	for {
+		// print all of the records
+		for i := 0; i < len(records); i++ {
+			// the reflect value of the record we are looking at
+			value := reflect.ValueOf(records[i])
 
-		if value.Kind() != reflect.Struct {
-			log.Fatal("This interface was not a struct")
-			return nil
-		}
-
-		// get the struct type of the first struct
-		structType := value.Type()
-
-		var structString string = fmt.Sprintf("%v:\t\t", i+1)
-		for j := 1; j < value.NumField(); j++ {
-			fieldName := structType.Field(j).Name
-			// get the actual value stored in that field
-			fieldValue := value.Field(j).Interface()
-
-			// if this is of type Time, do this (format the time to what we want to display)
-			if timeObject, ok := fieldValue.(time.Time); ok {
-				localTime := timeObject.Local()
-				fieldValue = localTime.Format("2006-01-02 15:04:05")
+			if value.Kind() != reflect.Struct {
+				log.Fatal("This interface was not a struct")
+				return nil, false
 			}
 
-			var myTime time.Time = CurrentTime()
+			// get the struct type of the first struct
+			structType := value.Type()
 
-			myTime = myTime.Local()
+			var structString string = fmt.Sprintf("%v:\t\t", i+1)
+			for j := 1; j < value.NumField(); j++ {
+				fieldName := structType.Field(j).Name
+				// get the actual value stored in that field
+				fieldValue := value.Field(j).Interface()
 
-			structString += fmt.Sprintf("%v: %v\t\t", fieldName, fieldValue)
+				// if this is of type Time, do this (format the time to what we want to display)
+				if timeObject, ok := fieldValue.(time.Time); ok {
+					localTime := timeObject.Local()
+					fieldValue = localTime.Format("2006-01-02 15:04:05")
+				}
+
+				structString += fmt.Sprintf("%v: %v\t\t", fieldName, fieldValue)
+			}
+			fmt.Println(structString)
 		}
-		fmt.Println(structString)
-	}
 
-	pInt, createNew, exit := CreateNewOrInt("Enter the number of the record you would like to edit, or 'c' to create a new one", 1, len(records))
-	if exit {
-		return nil
-	}
-	if createNew {
-		if createNewFunc == nil {
-			log.Fatal("The create new function was nil and not callable")
+		pInt, createNew, exit := CreateNewOrInt("Enter the number of the record you would like to edit, or 'c' to create a new one", 1, len(records))
+		if exit {
+			return nil, false
 		}
-		createNewFunc()
-		return nil
+		// record was selected
+		if pInt != -1 {
+			// return the selected option to where we know everything about the passed in objects
+			return &records[pInt-1], false
+		}
+		if createNew {
+			if createNewFunc == nil {
+				log.Fatal("The create new function was nil and not callable")
+			}
+			createNewFunc()
+		}
+
 	}
 
-	// return the selected option to where we know everything about the passed in objects
-	return &records[pInt-1]
 }
 
 // This method will take a prompt string that will be displayed to the user, as well as a slice of strings
@@ -135,7 +183,7 @@ func PromptAndHandle(prompt string, options []string, methodsToCall []func(), fo
 			return
 		}
 		userResponse = strings.TrimSpace(userResponse)
-		if userResponse == "exit" {
+		if userResponse == "" {
 			return
 		}
 		pInt, err := strconv.Atoi(userResponse)
@@ -144,9 +192,8 @@ func PromptAndHandle(prompt string, options []string, methodsToCall []func(), fo
 			continue
 		}
 
-		// call the corresponding method
+		// call the corresponding method based on its type
 		methodsToCall[pInt-1]()
-		break
 	}
 }
 
