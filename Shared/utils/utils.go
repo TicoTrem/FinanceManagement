@@ -108,56 +108,52 @@ func GetUserResponseInt(prompt string, constraint NumberConstraint, formatVariab
 
 // prints out records of any type of struct
 func SelectRecordOrCreate[T any](records []T, createNewFunc func()) (recPtr *T, exit bool) {
+	// print all of the records
+	for i := 0; i < len(records); i++ {
+		// the reflect value of the record we are looking at
+		value := reflect.ValueOf(records[i])
 
-	for {
-		// print all of the records
-		for i := 0; i < len(records); i++ {
-			// the reflect value of the record we are looking at
-			value := reflect.ValueOf(records[i])
+		if value.Kind() != reflect.Struct {
+			log.Fatal("This interface was not a struct")
+			return nil, false
+		}
 
-			if value.Kind() != reflect.Struct {
-				log.Fatal("This interface was not a struct")
-				return nil, false
+		// get the struct type of the first struct
+		structType := value.Type()
+
+		var structString string = fmt.Sprintf("%v:\t\t", i+1)
+		for j := 1; j < value.NumField(); j++ {
+			fieldName := structType.Field(j).Name
+			// get the actual value stored in that field
+			fieldValue := value.Field(j).Interface()
+
+			// if this is of type Time, do this (format the time to what we want to display)
+			if timeObject, ok := fieldValue.(time.Time); ok {
+				localTime := timeObject.Local()
+				fieldValue = localTime.Format("2006-01-02 15:04:05")
 			}
 
-			// get the struct type of the first struct
-			structType := value.Type()
-
-			var structString string = fmt.Sprintf("%v:\t\t", i+1)
-			for j := 1; j < value.NumField(); j++ {
-				fieldName := structType.Field(j).Name
-				// get the actual value stored in that field
-				fieldValue := value.Field(j).Interface()
-
-				// if this is of type Time, do this (format the time to what we want to display)
-				if timeObject, ok := fieldValue.(time.Time); ok {
-					localTime := timeObject.Local()
-					fieldValue = localTime.Format("2006-01-02 15:04:05")
-				}
-
-				structString += fmt.Sprintf("%v: %v\t\t", fieldName, fieldValue)
-			}
-			fmt.Println(structString)
+			structString += fmt.Sprintf("%v: %v\t\t", fieldName, fieldValue)
 		}
-
-		pInt, createNew, exit := CreateNewOrInt("Enter the number of the record you would like to edit, or 'c' to create a new one", 1, len(records))
-		if exit {
-			return nil, true
-		}
-		// record was selected
-		if pInt != -1 {
-			// return the selected option to where we know everything about the passed in objects
-			return &records[pInt-1], false
-		}
-		if createNew {
-			if createNewFunc == nil {
-				log.Fatal("The create new function was nil and not callable")
-			}
-			createNewFunc()
-		}
-
+		fmt.Println(structString)
 	}
 
+	pInt, createNew, exit := CreateNewOrInt("Enter the number of the record you would like to edit, or 'c' to create a new one", 1, len(records))
+	if exit {
+		return nil, true
+	}
+	// record was selected
+	if pInt != -1 {
+		// return the selected option to where we know everything about the passed in objects
+		return &records[pInt-1], false
+	}
+	if createNew {
+		if createNewFunc == nil {
+			log.Fatal("The create new function was nil and not callable")
+		}
+		createNewFunc()
+	}
+	return nil, false
 }
 
 // This method will take a prompt string that will be displayed to the user, as well as a slice of strings
@@ -165,6 +161,7 @@ func SelectRecordOrCreate[T any](records []T, createNewFunc func()) (recPtr *T, 
 // the createNewFunc will be called to handle creating a new record. If you do not need the option to create
 // a new record, just pass in 'nil' to that parameter. functions are just pointers so this will not cause errors
 func PromptAndHandle(prompt string, options []string, methodsToCall []func(), formatVariables ...any) (exit bool) {
+	ogPrompt := prompt
 	prompt += "\n"
 	for i := 0; i < len(options); i++ {
 		prompt += fmt.Sprintf("\t%v)\t%v\n", i+1, options[i])
@@ -187,6 +184,7 @@ func PromptAndHandle(prompt string, options []string, methodsToCall []func(), fo
 	pInt, err := strconv.Atoi(userResponse)
 	if err != nil || pInt < 1 || pInt > len(options) {
 		fmt.Print("Invalid Input\n\n")
+		return PromptAndHandle(ogPrompt, options, methodsToCall, formatVariables...)
 	}
 
 	// call the corresponding method based on its type

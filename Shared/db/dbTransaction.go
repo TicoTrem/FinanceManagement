@@ -28,7 +28,10 @@ func (transaction *Transaction) Delete() {
 	if err != nil {
 		log.Fatal("Error deleting transaction %v in the Database"+err.Error(), transaction.Id)
 	}
-	SetEstimatedSpendingMoney(GetEstimatedSpendingMoney() - transaction.Amount)
+	if transaction.Amount < 0 {
+		SetEstimatedSpendingMoney(GetEstimatedSpendingMoney() - transaction.Amount)
+	}
+
 	fmt.Println("Your transaction has successfully been deleted from the Database!")
 	*transaction = Transaction{} // make it zero value since it is now deleted from Database
 }
