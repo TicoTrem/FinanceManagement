@@ -21,7 +21,7 @@ func HandleAddTransaction() {
 			fmt.Println("Invalid input")
 			continue
 		}
-		db.AddTransaction(&db.Transaction{Amount: amount, Date: utils.CurrentTime().UTC(), Description: "User Added"})
+		db.AddTransaction(&db.Transaction{Amount: amount, Date: utils.CurrentTime().UTC(), Description: "(Custom) User Added"})
 		fmt.Println("Your transaction has successfully been added to the database!")
 		// if the transaction is positive, we just need to add it to the database as above.
 		// if it is negative, we will lower the estimated spending money accordingly
@@ -30,31 +30,36 @@ func HandleAddTransaction() {
 		}
 		break
 	}
-
 }
 
 var selectedTransaction db.Transaction
 
 func HandleDisplayEditTransactions() {
-	now := utils.CurrentTime().AddDate(0, 0, 1).UTC()
-	dBegin := now.AddDate(0, -1, -2)
-	// get all transactions within the past month
-	transactions := db.GetAllTransactions(&dBegin, &now)
+	for {
+		now := utils.CurrentTime().AddDate(0, 0, 1).UTC()
+		dBegin := now.AddDate(0, -1, -2)
+		// get all transactions within the past month
+		transactions := db.GetAllTransactions(&dBegin, &now)
 
-	var parsedInt int
-	//for i := 0; i < len(transactions); i++ {
-	//	fmt.Printf("%v:\tAmount: %v\t Date: %v\tDescription: %v\n", i+1, utils.GetMoneyString(transactions[i].Amount), transactions[i].Date.Local().Format(time.DateTime), transactions[i].Description)
-	//}
-	var selectedTransactionPtr *db.Transaction = utils.SelectRecordOrCreate(transactions, HandleAddTransaction)
+		var parsedInt int
+		//for i := 0; i < len(transactions); i++ {
+		//	fmt.Printf("%v:\tAmount: %v\t Date: %v\tDescription: %v\n", i+1, utils.GetMoneyString(transactions[i].Amount), transactions[i].Date.Local().Format(time.DateTime), transactions[i].Description)
+		//}
+		selectedTransactionPtr, exit := utils.SelectRecordOrCreate(transactions, HandleAddTransaction)
+		if exit {
+			return
+		}
 
-	if selectedTransactionPtr == nil {
-		return
+		if selectedTransactionPtr == nil {
+			return
+		}
+		selectedTransaction = *selectedTransactionPtr
+
+		options := []string{"Edit the transaction value", "Delete the transaction"}
+		functions := []func(){handleEditTransaction, selectedTransaction.Delete}
+		utils.PromptAndHandle("Transaction %v:\\tAmount: %v\\t Date: %v\\t was selected.\\nWould you like to:", options, functions, parsedInt, selectedTransaction.Amount, selectedTransaction.Date)
 	}
-	selectedTransaction = *selectedTransactionPtr
 
-	options := []string{"Edit the transaction value", "Delete the transaction"}
-	functions := []func(){handleEditTransaction, selectedTransaction.Delete}
-	utils.PromptAndHandle("Transaction %v:\\tAmount: %v\\t Date: %v\\t was selected.\\nWould you like to:", options, functions, parsedInt, selectedTransaction.Amount, selectedTransaction.Date)
 }
 
 func handleEditTransaction() {
