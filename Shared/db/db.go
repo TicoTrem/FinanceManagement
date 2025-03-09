@@ -85,6 +85,13 @@ func IncreaseEmergencyFund(amount float32) {
 	}
 }
 
+func SetEmergencyAmount(amount float32) {
+	_, err := Database.Exec("UPDATE Variables SET emergencyAmount = ?;", amount)
+	if err != nil {
+		log.Fatal("Error updating emergencyAmount in to Variables table")
+	}
+}
+
 // used in different module so its grayed out
 // UpdateMaxEmergencyFund will be ran in finance.go every month before calculating
 // how much to put inside this account to calculate 6 months worth of expenses, and have
