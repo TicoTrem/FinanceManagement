@@ -148,11 +148,12 @@ func GetSavingsPerMonth() float32 {
 }
 
 func SetSavingsPerMonth(savingsPerMonth float32) {
-
+	estSpendMoneyDelta := GetSavingsPerMonth() - savingsPerMonth
 	_, err := Database.Exec("UPDATE Variables SET savingsPerMonth = ?;", savingsPerMonth)
 	if err != nil {
 		log.Fatal("Failed to update savingsPerMonth variable in database: " + err.Error())
 	}
+	SetEstimatedSpendingMoney(GetEstimatedSpendingMoney() + estSpendMoneyDelta)
 }
 
 func GetAmountToSaveThisMonth() float32 {

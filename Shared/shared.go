@@ -146,7 +146,7 @@ func MonthlyTask() {
 	// Set the estimated spending money value to the spending money, with next months predicted outcome
 	// and deducting the set in stone monthly expenses. The expenses should be automatically registered as transactions because
 	// otherwise you would not be able to lower the spending money when you make purchases
-	db.SetEstimatedSpendingMoney(spendingMoney + db.GetExpectedMonthlyIncome() + db.GetMonthlyExpenses())
+	db.SetEstimatedSpendingMoney(spendingMoney + db.GetExpectedMonthlyIncome() + db.GetMonthlyExpenses() - db.GetSavingsPerMonth())
 
 }
 
