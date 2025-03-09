@@ -22,7 +22,6 @@ func handleChangeMonthlySavings() {
 
 	}
 	db.SetSavingsPerMonth(fResponse)
-	return
 }
 
 func handleAddExtraSavings() {
@@ -31,5 +30,5 @@ func handleAddExtraSavings() {
 		return
 	}
 	db.AddTransaction(&db.Transaction{Amount: -fResponse, Date: utils.CurrentTime().AddDate(0, 0, -1), Description: fmt.Sprintf("(Savings) $%v Additional Savings", fResponse)})
-	fmt.Println("Successfully added %v to savings")
+	fmt.Printf("Successfully added %v to savings", utils.GetMoneyString(fResponse))
 }
