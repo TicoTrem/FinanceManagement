@@ -16,15 +16,17 @@ func HandleSavings() {
 }
 
 func handleChangeMonthlySavings() {
-	fResponse, exit := utils.GetUserResponseFloat("What would you like to change your monthly savings contribution to?", utils.Positive)
-	if exit {
+	for {
+		fResponse, exit := utils.GetUserResponseFloat("What would you like to change your monthly savings contribution to?", utils.Positive)
+		if exit {
+			return
+		}
+		valid := db.SetSavingsPerMonth(fResponse)
+		if !valid {
+			fmt.Println("You can't set your monthly savings contribution to be more than your current estimated spending money")
+		}
 		return
 	}
-	if fResponse < 0.0 {
-		fmt.Println("The amount you plan to contribute to savings every month should not be a negative number")
-
-	}
-	db.SetSavingsPerMonth(fResponse)
 }
 
 func handleAddExtraSavings() {
