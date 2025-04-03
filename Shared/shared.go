@@ -11,7 +11,7 @@ import (
 	"github.com/ticotrem/finance/shared/utils"
 )
 
-var isTesting bool = true
+var isTesting bool = false
 
 // This function will setup the database and create the tables if they don't exist
 func SetupDatabase() {
@@ -137,16 +137,16 @@ func MonthlyTask() {
 		}
 		db.IncreaseEmergencyFund(amountToIncrease)
 	}
-
-	spendingMoney := db.GetSpendingMoney() + netTransactionChange
+	fmt.Printf("Net transaction change is: %v", netTransactionChange)
+	spendingMoneyAfterAllTransactions := db.GetSpendingMoney() + netTransactionChange
 
 	// update it for last month, we later updated EstimatedSpendingMoney for THIS month.
-	db.SetSpendingMoney(spendingMoney)
+	db.SetSpendingMoney(spendingMoneyAfterAllTransactions)
 
 	// Set the estimated spending money value to the spending money, with next months predicted outcome
 	// and deducting the set in stone monthly expenses. The expenses should be automatically registered as transactions because
 	// otherwise you would not be able to lower the spending money when you make purchases
-	db.SetEstimatedSpendingMoney(spendingMoney + db.GetExpectedMonthlyIncome() + db.GetMonthlyExpenses() - db.GetSavingsPerMonth())
+	db.SetEstimatedSpendingMoney(spendingMoneyAfterAllTransactions + db.GetExpectedMonthlyIncome() + db.GetMonthlyExpenses() - db.GetSavingsPerMonth())
 
 }
 
@@ -160,12 +160,15 @@ func addMonthlyTransactions(emergencyAmount float32, emergencyMax float32) {
 	// The emergency fund takes half of the netTransaction change if it is positive.
 	var amountToAddToEmergency float32 = 0.0
 	amountToSave := db.GetSavingsPerMonth()
-	estimatedSpendingMoney := db.GetEstimatedSpendingMoney()
-	if amountToSave >= estimatedSpendingMoney {
+
+	// we dont need this as changing savings amounts should check if estimated spending money is below 0 after the change
+	netTransactionChange := calculateNetTransactionChange()
+	spendingMoneyAfterMonthlyExpenses := db.GetSpendingMoney() + netTransactionChange
+	if amountToSave >= spendingMoneyAfterMonthlyExpenses {
 		// only assigning savings to this to calculate how much
 		// to add to emergency fund later. This makes it so emergency fund will
 		// not take more than we are estimated to have
-		amountToSave = estimatedSpendingMoney
+		amountToSave = spendingMoneyAfterMonthlyExpenses
 	}
 
 	// this is adding transactions for the last day of last month, so tell people what they should add to their savings,
@@ -184,11 +187,12 @@ func addMonthlyTransactions(emergencyAmount float32, emergencyMax float32) {
 			// the difference (amount needed to fill fund) is added to emergencyFund
 			amountToAddToEmergency += amountToFillEmergencyFund
 			amountToSaveThisMonth := amountToSave - amountToFillEmergencyFund
+			fmt.Println(amountToSaveThisMonth)
 			// used to show the user how much to add to savings account that month
 			db.SetAmountToSaveThisMonth(amountToSaveThisMonth)
 			if amountToSave > 0 {
 				// the difference is removed from the amount added to savings
-				db.AddTransaction(&db.Transaction{Amount: -amountToSave, Date: utils.CurrentTime().AddDate(0, 0, -1), Description: fmt.Sprintf("(Savings) $%v monthly contribution", amountToSaveThisMonth)})
+				db.AddTransaction(&db.Transaction{Amount: -amountToSaveThisMonth, Date: utils.CurrentTime().AddDate(0, 0, -1), Description: fmt.Sprintf("(Savings) $%v monthly contribution", amountToSaveThisMonth)})
 				amountToSave = 0.0
 			}
 		} else { // add whatever you can to emergency without saving
@@ -206,12 +210,12 @@ func addMonthlyTransactions(emergencyAmount float32, emergencyMax float32) {
 	// project like this one, or ever rework this project
 	goals := db.GetAllGoalStructs()
 	var amountToSavePerGoal float32 = 0.0
-	if estimatedSpendingMoney > 0 {
+	if spendingMoneyAfterMonthlyExpenses > 0 {
 		var sum float32 = 0.0
 		for i := 0; i < len(goals); i++ {
 			sum += goals[i].AmountPerMonth
 		}
-		if estimatedSpendingMoney < sum {
+		if spendingMoneyAfterMonthlyExpenses < sum {
 			amountToSavePerGoal = sum / float32(len(goals))
 		}
 		for i := 0; i < len(goals); i++ {
@@ -239,12 +243,17 @@ func calculateNetTransactionChange() float32 {
 		firstOfLastMonth = today.AddDate(0, 0, -1)
 	}
 
-	// this will add a month, the subtract the amount of days, which takes us to the last day of the month
-	lastOfLastMonth := firstOfLastMonth.AddDate(0, 1, -firstOfLastMonth.Day())
+	// create a copy by value to ensure original remains unchanged
+	firstOfLastMonthCopy := firstOfLastMonth
+	// Add 1 month to get to next month, then subtract days to get to last day of current month
+	// Add time.Hour * 24 - time.Nanosecond to include the entire last day (up to 23:59:59.999999999)
+	lastOfLastMonth := firstOfLastMonthCopy.AddDate(0, 1, -firstOfLastMonthCopy.Day()).Add(time.Hour*24 - time.Nanosecond)
 
 	var netTransactionChange float32 = 0.0
 
 	lastMonthTransactions := db.GetAllTransactions(&firstOfLastMonth, &lastOfLastMonth)
+
+	fmt.Println(lastMonthTransactions)
 
 	for i := 0; i < len(lastMonthTransactions); i++ {
 		netTransactionChange += lastMonthTransactions[i].Amount
