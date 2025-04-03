@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log"
 	"time"
+
+	"github.com/ticotrem/finance/shared/utils"
 )
 
 type Transaction struct {
