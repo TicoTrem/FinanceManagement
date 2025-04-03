@@ -55,6 +55,11 @@ func HandleDisplayEditTransactions() {
 		}
 		selectedTransaction = *selectedTransactionPtr
 
+		if !selectedTransaction.IsFromCurrentMonth() {
+			fmt.Println("The selected transaction can not be edited as it was not created this month")
+			continue
+		}
+
 		options := []string{"Edit the transaction value", "Delete the transaction"}
 		functions := []func(){handleEditTransaction, selectedTransaction.Delete}
 		exit = false
@@ -76,8 +81,10 @@ func handleEditTransaction() {
 			fmt.Println("The value could not be converted in to a float!")
 			continue
 		}
+		delta := parsedFloat - float64(selectedTransaction.Amount)
 		selectedTransaction.Amount = float32(parsedFloat)
-		db.UpdateTransaction(&selectedTransaction)
+		db.SetEstimatedSpendingMoney(db.GetEstimatedSpendingMoney() + float32(delta))
+		selectedTransaction.Update()
 		break
 	}
 }

@@ -31,9 +31,20 @@ func (transaction *Transaction) Delete() {
 	*transaction = Transaction{} // make it zero value since it is now deleted from Database
 }
 
+// IsFromCurrentMonth checks if the transaction date is from the current month
+// It returns true if the transaction is from the current month
+func (t *Transaction) IsFromCurrentMonth() bool {
+	currentTime := utils.CurrentTime()
+
+	// Check if the transaction year and month match the current year and month
+	return t.Date.Year() == currentTime.Year() &&
+		t.Date.Month() == currentTime.Month()
+}
+
 // updates the given transaction object in the mysql Database. It uses the id in the transaction struct
 // to update the correct record, updating the Transaction struct does not update the Database
-func UpdateTransaction(transaction *Transaction) {
+func (transaction *Transaction) Update() {
+
 	_, err := Database.Exec("UPDATE Transactions SET amount = ? WHERE id = ?;", transaction.Amount, transaction.Id)
 	if err != nil {
 		log.Fatal("Failed to update the transaction: " + err.Error())
