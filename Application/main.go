@@ -19,10 +19,12 @@ func main() {
 
 	options := []string{"Add a transaction", "Display and edit all transactions", "View and edit monthly expenses",
 		"View and edit goals", "Manage your emergency fund", "Manage your savings",
-		"Change expected monthly income", "Pass a month by for testing"}
+		"Change expected monthly income"}
 	methods := []func(){handlers.HandleAddTransaction, handlers.HandleDisplayEditTransactions, handlers.HandleViewAndEditMonthlyExpenses,
 		handlers.HandleViewAndEditGoal, handlers.HandleEmergencyFund, handlers.HandleSavings,
-		handlers.HandleChangeExpectedIncome, shared.MonthlyTask}
+		handlers.HandleChangeExpectedIncome}
+	// append(options, "Pass a month by for testing")
+	// append(methods, shared.MonthlyTask)
 
 	for {
 		emergencyAmount, _ := db.GetEmergencyData()
